@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">SkyCell</string>
+    <string name="title_sensor_list_sub">containers</string>
+    <string name="title_sensor_detail">Sensor Details</string>
+    <string name="title_settings">Settings</string>
+    <string name="ble_is_off">BLE is off</string>
+    <string name="ble_not_supported">BLE is not supported</string>
+    <string name="ble_adv_not_supported">BLE advertisement not supported</string>
+    <string name="nfc_not_supported">NFC is not supported</string>
+    <string name="start_upload">Start uploading...</string>
+    <string name="upload_success">Upload success</string>
+    <string name="upload_failed">Upload failed</string>
+    <string name="menu_advertise">Advertise</string>
+    <string name="menu_settings">Settings</string>
+    <string name="image_container">Container</string>
+    <string name="image_battery">Battery</string>
+    <string name="image_data">Data</string>
+    <string name="label_id">Container ID</string>
+    <string name="label_utc_start">Start time</string>
+    <string name="label_min_temp_inside">Min temperature internal, C</string>
+    <string name="label_max_temp_inside">Max temperature internal, C</string>
+    <string name="label_rssi">RSSI</string>
+    <string name="label_button_upload">UPLOAD DATA</string>
+    <string name="label_button_abort">Abort</string>
+    <string name="label_progressbar_text">FETCHING DATA...</string>
+    <string name="pref_cat_server">Server</string>
+    <string name="pref_server_ip">IP/Hostname</string>
+    <string name="default_pref_server_ip">0.0.0.0</string>
+</resources>

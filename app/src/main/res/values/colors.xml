@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryDark">#2C3E50</color>
+    <color name="colorAccent">#36AAC7</color>
+    <color name="colorTitle">#000000</color>
+    <color name="colorSubTitle">#9f9f9f</color>
+    <color name="colorText">#515151</color>
+    <color name="colorContainerBlue">#5EC8E2</color>
+    <color name="colorContainerRed">#E82D20</color>
+    <color name="colorSkyCellBlue">#36AAC7</color>
+    <color name="colorBatteryGreen">#0DA52A</color>
+    <color name="colorBatteryOrange">#D7920B</color>
+    <color name="colorBatteryRed">#E82D20</color>
+</resources>
