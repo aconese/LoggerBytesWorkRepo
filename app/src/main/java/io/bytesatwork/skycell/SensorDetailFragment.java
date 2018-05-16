@@ -164,6 +164,7 @@ public class SensorDetailFragment extends Fragment {
                         mActivity.mBleService.sendClear(sensor.getAddress());
                     }
                     uploadButton.setEnabled(true);
+                    mActivity.changeFragment(mActivity.FRAGMENT_BROWSER, mActivity.mCurrentSensorAddress);
                 }
             });
 

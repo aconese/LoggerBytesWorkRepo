@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String FRAGMENT_SENSOR_LIST = "io.bytesatwork.skycell.FRAGMENT_SENSOR_LIST";
     public static final String FRAGMENT_SENSOR_DETAIL = "io.bytesatwork.skycell.FRAGMENT_SENSOR_DETAIL";
     public static final String FRAGMENT_SETTINGS = "io.bytesatwork.skycell.FRAGMENT_SETTINGS";
+    public static final String FRAGMENT_BROWSER = "io.bytesatwork.skycell.FRAGMENT_BROWSER";
 
     public static final String SHARED_PREFERENCES = "io.bytesatwork.skycell.SHARED_PREFERENCES";
     public static final String SHARED_PREFERENCES_SERVER_IP = "io.bytesatwork.skycell.SHARED_PREFERENCES_SERVER_IP";
@@ -295,6 +296,8 @@ public class MainActivity extends AppCompatActivity {
             newFragment = new SensorDetailFragment();
         } else if (tag.equals(FRAGMENT_SETTINGS)) {
             newFragment = new SettingsFragment();
+        } else if (tag.equals(FRAGMENT_BROWSER)) {
+            newFragment = new BrowserFragment();
         }
 
         if (newFragment != null) {

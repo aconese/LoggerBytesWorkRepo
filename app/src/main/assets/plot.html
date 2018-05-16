@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="cache-control" content="public">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="Description" content="Author: benjamin.imhof@bytesatwork.ch Copyright: (c) 2017 bytesatwork">
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <title>SkyCell</title>
+    <script>
+        var options = {
+            "title": {
+                "text": "World\'s largest cities per 2017"
+            },
+            "chart": {
+                "type": "column"
+            },
+            "xAxis": {
+                "type": "category",
+                "labels": {
+                    "rotation": -45,
+                    "style": {
+                        "fontSize": "13px",
+                        "fontFamily": "Roboto"
+                    }
+                }
+            },
+            "yAxis": {
+                "min": 0,
+                "title": {
+                    "text": "Population (millions)"
+                }
+            },
+            "legend": {
+                "enabled": false
+            },
+            "tooltip": {
+                "pointFormat": "Population in 2017: <b>{point.y:.1f} millions</b>"
+            },
+            "series": [{
+                "name": "Population",
+                "data": [
+                    ["Shanghai", 24.2],
+                    ["Beijing", 20.8],
+                    ["Karachi", 14.9],
+                    ["Shenzhen", 13.7],
+                    ["Guangzhou", 13.1],
+                    ["Istanbul", 12.7],
+                    ["Mumbai", 12.4],
+                    ["Moscow", 12.2],
+                    ["São Paulo", 12.0],
+                    ["Delhi", 11.7],
+                    ["Kinshasa", 11.5],
+                    ["Tianjin", 11.2],
+                    ["Lahore", 11.1],
+                    ["Jakarta", 10.6],
+                    ["Dongguan", 10.6],
+                    ["Lagos", 10.6],
+                    ["Bengaluru", 10.3],
+                    ["Seoul", 9.8],
+                    ["Foshan", 9.3],
+                    ["Tokyo", 9.3]
+                ],
+                "dataLabels": {
+                    "enabled": true,
+                    "rotation": -90,
+                    "color": "#FFFFFF",
+                    "align": "right",
+                    "format": "{point.y:.1f}",
+                    "y": 10,
+                    "style": {
+                        "fontSize": "13px",
+                        "fontFamily": "Roboto"
+                    }
+                }
+            }],
+            "exporting": {
+                "chartOptions": {
+                    "plotOptions": {
+                        "series": {
+                            "dataLabels": {
+                                "enabled": true
+                            }
+                        }
+                    }
+                }
+            },
+            "credits":
+            {
+                "enabled": false
+            }
+        };
+
+        function createChart(options) {
+            var chart = new Highcharts.chart('container', options);
+        }
+    </script>
+</head>
+<body onload="createChart(this.options)">
+    <div id="container"></div>
+    <input type="button" value="Say hello" onClick="Android.showToast('Hello Android!')" />
+    <p><a href="https://www.bytesatwork.io/">bytes at work</a></p>
+</body>
+</html>
