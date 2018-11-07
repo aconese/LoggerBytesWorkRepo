@@ -7,6 +7,7 @@
     <string name="ble_is_off">BLE is off</string>
     <string name="ble_not_supported">BLE is not supported</string>
     <string name="ble_adv_not_supported">BLE advertisement not supported</string>
+    <string name="nfc_is_off">NFC is off</string>
     <string name="nfc_not_supported">NFC is not supported</string>
     <string name="start_upload">Start uploading...</string>
     <string name="upload_success">Upload success</string>

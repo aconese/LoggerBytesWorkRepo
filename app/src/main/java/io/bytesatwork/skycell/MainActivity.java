@@ -3,6 +3,7 @@ package io.bytesatwork.skycell;
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.sensor.SensorList;
 
+import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
@@ -13,6 +14,11 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcAdapter;
+import android.nfc.Tag;
+import android.nfc.tech.Ndef;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
@@ -24,7 +30,9 @@ import android.view.MenuItem;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,12 +47,16 @@ public class MainActivity extends AppCompatActivity {
     public static final String SHARED_PREFERENCES = "io.bytesatwork.skycell.SHARED_PREFERENCES";
     public static final String SHARED_PREFERENCES_SERVER_IP = "io.bytesatwork.skycell.SHARED_PREFERENCES_SERVER_IP";
 
+    public static final String MIME_TEXT_PLAIN = "text/plain";
+
     public SkyCellApplication app = ((SkyCellApplication) SkyCellApplication.getAppContext());
     public BluetoothAdapter mBluetoothAdapter;
-    public static BleService mBleService;
+    public static BleService mBleService = null;
+    public static boolean mBleServiceBound = false;
     public String mCurrentSensorAddress = "";
     public List<String> mSensorViewList = Collections.synchronizedList(new ArrayList<String>());
     private SharedPreferences mPreferences;
+    public NfcAdapter mNfcAdapter;
 
     //Handles various events fired by the Service.
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
@@ -111,14 +123,27 @@ public class MainActivity extends AppCompatActivity {
         return intentFilter;
     }
 
+    private static IntentFilter setupNFCReceiverFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(NfcAdapter.ACTION_NDEF_DISCOVERED);
+        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
+        try {
+            intentFilter.addDataType(MIME_TEXT_PLAIN);
+        } catch(IntentFilter.MalformedMimeTypeException e) {
+            Log.e(TAG+":"+Utils.getLineNumber(), e.toString());
+        }
+        return intentFilter;
+    }
+
     //Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
-            Log.i(TAG+":"+Utils.getLineNumber(), "onServiceConnected");
+            Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceConnected");
             mBleService = ((BleService.LocalBinder) service).getService();
+            mBleServiceBound = true;
             if (!mBleService.initialize()) {
-                Log.e(TAG+":"+Utils.getLineNumber(), "Unable to initialize Bluetooth");
+                Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
                 finish();
             }
 
@@ -129,10 +154,21 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
-            Log.i(TAG+":"+Utils.getLineNumber(), "onServiceDisconnected");
+            Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceDisconnected");
+            mBleService.advertise(false); //Stop permanent advertising
             mBleService = null;
+            mBleServiceBound = false;
+        }
 
-            mBleService.advertise(false); //Start permanent advertising
+        @Override
+        public void onBindingDied(ComponentName name) {
+            Log.e(TAG + ":" + Utils.getLineNumber(), "onBindingDied");
+            finish();
+        }
+
+        public void onNullBinding(ComponentName name) {
+            Log.e(TAG+":"+Utils.getLineNumber(),"onNullBinding");
+            finish();
         }
     };
 
@@ -178,11 +214,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         //Check for advertisement support
-        /*if(!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
+        if (!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
             Toast.makeText(this, R.string.ble_adv_not_supported, Toast.LENGTH_SHORT).show();
             Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.ble_adv_not_supported));
             finish();
-        }*/
+        }
 
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
         // BluetoothAdapter through BluetoothManager.
@@ -190,7 +226,16 @@ public class MainActivity extends AppCompatActivity {
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
+        mNfcAdapter = NfcAdapter.getDefaultAdapter(app.getApplicationContext());
+        if (!mNfcAdapter.isEnabled()) {
+            Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.nfc_is_off));
+            //startActivity(new Intent(android.provider.Settings.ACTION_NFC_SETTINGS));
+            finish();
+        }
+
         mPreferences = getSharedPreferences(SHARED_PREFERENCES, Context.MODE_PRIVATE);
+
+        handleIntent(getIntent());
     }
 
     @Override
@@ -236,6 +281,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
+        //registerReceiver(mNFCReceiver, setupNFCReceiverFilter());
+        final PendingIntent pendingIntent = PendingIntent.getActivity(app.getApplicationContext(), 0,
+                new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+        IntentFilter[] filters = new IntentFilter[1];
+        filters[0] = setupNFCReceiverFilter();
+        mNfcAdapter.enableForegroundDispatch(this, pendingIntent, filters, new String[][]{});
 
         //Keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -247,6 +298,8 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG+":"+Utils.getLineNumber(), "Pause()");
 
         unregisterReceiver(mGattUpdateReceiver);
+        //unregisterReceiver(mNFCReceiver);
+        mNfcAdapter.disableForegroundDispatch(this);
 
         //Clear keep screen on
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -264,7 +317,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (mBleService == null) {
             Intent msrServiceIntent = new Intent(this, BleService.class);
-            bindService(msrServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+            app.getApplicationContext().bindService(msrServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
         }
     }
 
@@ -283,8 +336,80 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         Log.d(TAG+":"+Utils.getLineNumber(), "onDestroy");
 
-        unbindService(mServiceConnection);
+        if (mBleServiceBound && mBleService != null) {
+            app.getApplicationContext().unbindService(mServiceConnection);
+            mBleServiceBound = false;
+        }
         mBleService = null;
+    }
+
+    @Override
+    public void onNewIntent(Intent intent) {
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent != null) {
+            final String action = intent.getAction();
+
+            if (action != null && action.equals(NfcAdapter.ACTION_NDEF_DISCOVERED)) {
+                String type = intent.getType();
+
+                if (MIME_TEXT_PLAIN.equals(type)) {
+                    Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+                    Ndef ndef = Ndef.get(tag);
+                    if (ndef != null) {
+                        NdefMessage ndefMessage = ndef.getCachedNdefMessage();
+
+                        NdefRecord[] records = ndefMessage.getRecords();
+                        for (NdefRecord ndefRecord : records) {
+                            if (ndefRecord.getTnf() == NdefRecord.TNF_WELL_KNOWN && Arrays.equals(ndefRecord.getType(), NdefRecord.RTD_TEXT)) {
+                                try {
+                                    final String text = readText(ndefRecord);
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            Toast.makeText(app.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
+                                    Log.i(TAG + ":" + Utils.getLineNumber(), text);
+                                } catch (UnsupportedEncodingException e) {
+                                    Log.e(TAG + ":" + Utils.getLineNumber(), e.getMessage());
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Wrong mime type: " + type);
+                }
+            }
+        }
+    }
+
+    private String readText(NdefRecord record) throws UnsupportedEncodingException {
+        /*
+         * See NFC forum specification for "Text Record Type Definition" at 3.2.1
+         *
+         * http://www.nfc-forum.org/specs/
+         *
+         * bit_7 defines encoding
+         * bit_6 reserved for future use, must be 0
+         * bit_5..0 length of IANA language code
+         */
+
+        byte[] payload = record.getPayload();
+
+        // Get the Text Encoding
+        String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
+
+        // Get the Language Code
+        int languageCodeLength = payload[0] & 0063;
+
+        // String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
+        // e.g. "en"
+
+        // Get the Text
+        return new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, textEncoding);
     }
 
     public void changeFragment(String tag, String currentSensorAddress) {
