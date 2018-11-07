@@ -40,6 +40,4 @@
     <uses-feature android:name="android.hardware.location" android:required="true" />
     <uses-feature android:name="android.hardware.nfc" android:required="true" />
 
-    <uses-sdk android:minSdkVersion="22" android:targetSdkVersion="22" />
-
 </manifest>

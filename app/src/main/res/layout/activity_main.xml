@@ -20,10 +20,10 @@
             android:layout_width="match_parent"
             android:layout_height="?android:attr/actionBarSize"
             android:fontFamily="@font/roboto"
-            app:theme="@style/AppTheme"
-            app:popupTheme="@style/AppTheme.PopupOverlay"
-            app:titleTextColor="@color/colorTitle"
-            app:subtitleTextColor="@color/colorSubTitle" />
+            android:theme="@style/AppTheme"
+            android:popupTheme="@style/AppTheme.PopupOverlay"
+            android:titleTextColor="@color/colorTitle"
+            android:subtitleTextColor="@color/colorSubTitle" />
 
     </android.support.design.widget.AppBarLayout>
 
