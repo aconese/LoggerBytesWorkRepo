@@ -20,17 +20,25 @@ import android.bluetooth.le.AdvertiseCallback;
 import android.bluetooth.le.AdvertiseData;
 import android.bluetooth.le.AdvertiseSettings;
 import android.bluetooth.le.BluetoothLeAdvertiser;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanFilter;
+import android.bluetooth.le.ScanResult;
+import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.ParcelUuid;
 import android.util.Log;
 
 import java.nio.BufferOverflowException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -292,6 +300,26 @@ public class BleService extends Service {
         @Override
         public void onStartFailure(int errorCode) {
             Log.e(TAG+":"+Utils.getLineNumber(), "Advertising onStartFailure: " + errorCode);
+            switch (errorCode) {
+                case  ADVERTISE_FAILED_ALREADY_STARTED :
+                    Log.e(TAG+":"+Utils.getLineNumber(), " ADVERTISE_FAILED_ALREADY_STARTED ");
+                    break;
+                case ADVERTISE_FAILED_DATA_TOO_LARGE:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "ADVERTISE_FAILED_DATA_TOO_LARGE");
+                    break;
+                case ADVERTISE_FAILED_FEATURE_UNSUPPORTED:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "ADVERTISE_FAILED_FEATURE_UNSUPPORTED");
+                    break;
+                case ADVERTISE_FAILED_INTERNAL_ERROR:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "ADVERTISE_FAILED_INTERNAL_ERROR");
+                    break;
+                case ADVERTISE_FAILED_TOO_MANY_ADVERTISERS:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "ADVERTISE_FAILED_TOO_MANY_ADVERTISERS");
+                    break;
+                default:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "ADVERTISE_FAILED");
+                    break;
+            }
             super.onStartFailure(errorCode);
         }
     };
@@ -445,6 +473,72 @@ public class BleService extends Service {
         }
         Log.i(TAG+":"+Utils.getLineNumber(), "Service: " + service.getUuid() + " added.");
     }
+
+    public synchronized void scan(final boolean enable, String uuid)
+    {
+        Log.i(TAG+":"+Utils.getLineNumber(), "Scan enable: " + enable);
+        BluetoothLeScanner mScanner = BluetoothAdapter.getDefaultAdapter().getBluetoothLeScanner();
+        if (mScanner != null) {
+            if (enable) {
+                ScanSettings settings = new ScanSettings.Builder()
+                        .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+                        .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                        .build();
+                try {
+                    mScanner.startScan(scanFilters(uuid), settings, mScanCallback);
+                    Log.i(TAG+":"+Utils.getLineNumber(), "Scanning started");
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG + ":" + Utils.getLineNumber(), e.getMessage());
+                }
+            } else {
+                mScanner.stopScan(mScanCallback);
+                Log.i(TAG+":"+Utils.getLineNumber(), "Scanning stopped");
+            }
+        } else {
+            Log.e(TAG+":"+Utils.getLineNumber(), "mScanner is null");
+        }
+    }
+
+    private List<ScanFilter> scanFilters(String uuid) {
+        ScanFilter filter = new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID.fromString(uuid))).build();
+        List<ScanFilter> list = new ArrayList<ScanFilter>(1);
+        list.add(filter);
+        return list;
+    }
+
+    private final ScanCallback mScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            BluetoothDevice device = result.getDevice();
+            if (device != null) {
+                Log.d(TAG, "onScanResult: "+device.getName()+" "+device.getAddress()+" "+result.getRssi());
+            }
+        }
+
+        @Override
+        public void onScanFailed(int errorCode) {
+            switch (errorCode) {
+                case SCAN_FAILED_ALREADY_STARTED:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "SCAN_FAILED_ALREADY_STARTED");
+                    break;
+                case SCAN_FAILED_APPLICATION_REGISTRATION_FAILED:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "SCAN_FAILED_APPLICATION_REGISTRATION_FAILED");
+                    break;
+                case SCAN_FAILED_FEATURE_UNSUPPORTED:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "SCAN_FAILED_FEATURE_UNSUPPORTED");
+                    break;
+                case SCAN_FAILED_INTERNAL_ERROR:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "SCAN_FAILED_INTERNAL_ERROR");
+                    break;
+                default:
+                    Log.e(TAG+":"+Utils.getLineNumber(), "SCAN_FAILED");
+                    break;
+            }
+
+
+            super.onScanFailed(errorCode);
+        }
+    };
 
     public synchronized boolean advertise(final boolean enable) {
         BluetoothLeAdvertiser advertiser = BluetoothAdapter.getDefaultAdapter().getBluetoothLeAdvertiser();

@@ -3,6 +3,7 @@ package io.bytesatwork.skycell;
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.sensor.SensorList;
 
+import android.Manifest;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
@@ -38,6 +39,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
+    private static final int PERMISSION_REQUEST_ACCESS_COARSE_LOCATION = 1;
 
     public static final String FRAGMENT_SENSOR_LIST = "io.bytesatwork.skycell.FRAGMENT_SENSOR_LIST";
     public static final String FRAGMENT_SENSOR_DETAIL = "io.bytesatwork.skycell.FRAGMENT_SENSOR_DETAIL";
@@ -141,14 +143,21 @@ public class MainActivity extends AppCompatActivity {
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceConnected");
             mBleService = ((BleService.LocalBinder) service).getService();
-            mBleServiceBound = true;
             if (!mBleService.initialize()) {
                 Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
                 finish();
             }
+            mBleServiceBound = true;
 
             if (mBluetoothAdapter.isEnabled()) {
                 mBleService.advertise(true); //Start permanent advertising
+                if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
+                        PackageManager.PERMISSION_GRANTED) {
+                    Log.d(TAG, "permission granted");
+                    mBleService.scan(true, Constants.SKYCELL_SERVICE);
+                } else {
+                    Log.d(TAG, "no permission");
+                }
             }
         }
 
@@ -171,6 +180,25 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
     };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[],
+        int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_ACCESS_COARSE_LOCATION:
+                if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "Coarse Location Permission granted");
+                    if (mBleServiceBound && mBleService != null && mBluetoothAdapter.isEnabled()) {
+                        mBleService.scan(true, Constants.SKYCELL_SERVICE);
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
 
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
@@ -220,6 +248,13 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
 
+        if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) !=
+            PackageManager.PERMISSION_GRANTED) {
+            Log.d(TAG, "request permission");
+            requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                PERMISSION_REQUEST_ACCESS_COARSE_LOCATION);
+        }
+
         // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
         // BluetoothAdapter through BluetoothManager.
         final BluetoothManager bluetoothManager =
@@ -227,10 +262,10 @@ public class MainActivity extends AppCompatActivity {
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
         mNfcAdapter = NfcAdapter.getDefaultAdapter(app.getApplicationContext());
-        if (!mNfcAdapter.isEnabled()) {
+        if (mNfcAdapter == null || !mNfcAdapter.isEnabled()) {
             Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.nfc_is_off));
             //startActivity(new Intent(android.provider.Settings.ACTION_NFC_SETTINGS));
-            finish();
+            //finish();
         }
 
         mPreferences = getSharedPreferences(SHARED_PREFERENCES, Context.MODE_PRIVATE);
@@ -281,12 +316,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
-        //registerReceiver(mNFCReceiver, setupNFCReceiverFilter());
-        final PendingIntent pendingIntent = PendingIntent.getActivity(app.getApplicationContext(), 0,
-                new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
-        IntentFilter[] filters = new IntentFilter[1];
-        filters[0] = setupNFCReceiverFilter();
-        mNfcAdapter.enableForegroundDispatch(this, pendingIntent, filters, new String[][]{});
+        if (mNfcAdapter != null) {
+            //registerReceiver(mNFCReceiver, setupNFCReceiverFilter());
+            final PendingIntent pendingIntent = PendingIntent.getActivity(app.getApplicationContext(), 0,
+                    new Intent(this, getClass()).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+            IntentFilter[] filters = new IntentFilter[1];
+            filters[0] = setupNFCReceiverFilter();
+            mNfcAdapter.enableForegroundDispatch(this, pendingIntent, filters, new String[][]{});
+        }
 
         //Keep screen on
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -298,8 +335,11 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG+":"+Utils.getLineNumber(), "Pause()");
 
         unregisterReceiver(mGattUpdateReceiver);
-        //unregisterReceiver(mNFCReceiver);
-        mNfcAdapter.disableForegroundDispatch(this);
+
+        if (mNfcAdapter != null) {
+            //unregisterReceiver(mNFCReceiver);
+            mNfcAdapter.disableForegroundDispatch(this);
+        }
 
         //Clear keep screen on
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
