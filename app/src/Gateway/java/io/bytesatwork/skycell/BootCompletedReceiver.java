@@ -15,16 +15,10 @@ public class BootCompletedReceiver extends BroadcastReceiver {
 
         //Start Service
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //Android 8.0 SDK 26
-            context.startForegroundService(new Intent(context, SkycellService.class));
+            context.startForegroundService(new Intent(context, SkyCellService.class));
         } else {
-            context.startService(new Intent(context, SkycellService.class)
+            context.startService(new Intent(context, SkyCellService.class)
                 .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
         }
-
-        //Start Activity
-        context.startActivity(new Intent(context, MainActivity.class)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-
-
     }
 }

@@ -27,7 +27,10 @@ android {
             zipAlignEnabled true
         }
     }
+    flavorDimensions "default"
     productFlavors {
+        Mobile {}
+        Gateway {}
     }
     buildToolsVersion '28.0.3'
 }

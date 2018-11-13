@@ -10,16 +10,16 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-public class SkycellService extends Service {
-    private static final String TAG = SkycellService.class.getSimpleName();
+public class SkyCellService extends Service {
+    private static final String TAG = SkyCellService.class.getSimpleName();
     public static final String CHANNEL_ID = "io.bytesatwork.skycell.CHANNEL_ID";
     public static final String CHANNEL_NAME = "Channel";
 
     private final IBinder mBinder = new LocalBinder();
 
     public class LocalBinder extends Binder {
-        public SkycellService getService() {
-            return SkycellService.this;
+        public SkyCellService getService() {
+            return SkyCellService.this;
         }
     }
 
