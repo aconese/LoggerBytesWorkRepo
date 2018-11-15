@@ -17,13 +17,17 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(getColor(android.R.color.transparent));
 
+        //TODO: Request Location Permission here if not set
+
         //Start Service
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //Android 8.0 SDK 26
-            startForegroundService(new Intent(this, SkyCellService.class));
-        } else {
-            startService(new Intent(this, SkyCellService.class)
+        //if (!SkyCellService.isRunning()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //Android 8.0 SDK 26
+                startForegroundService(new Intent(this, SkyCellService.class));
+            } else {
+                startService(new Intent(this, SkyCellService.class)
                     .addFlags(Intent.FLAG_RECEIVER_FOREGROUND));
-        }
+            }
+        //}
 
         finish();
     }

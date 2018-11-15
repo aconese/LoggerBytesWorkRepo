@@ -356,8 +356,8 @@ public class MainActivity extends AppCompatActivity {
         }*/
 
         if (mBleService == null) {
-            Intent msrServiceIntent = new Intent(this, BleService.class);
-            app.getApplicationContext().bindService(msrServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+            app.getApplicationContext().bindService(new Intent(this, BleService.class),
+                mServiceConnection, BIND_AUTO_CREATE);
         }
     }
 
