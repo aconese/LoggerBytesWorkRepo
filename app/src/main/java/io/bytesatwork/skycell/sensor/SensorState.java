@@ -1,98 +1,109 @@
 package io.bytesatwork.skycell.sensor;
 
+import io.bytesatwork.skycell.ByteBufferParser;
 import io.bytesatwork.skycell.Utils;
 
 import android.util.Log;
 
 import java.io.Serializable;
 import java.nio.ByteOrder;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.TimeZone;
 
 public class SensorState implements Serializable {
     private static final String TAG = SensorState.class.getSimpleName();
 
-    private byte[] mId;
+    public static final int SENSOR_STATE_CONTAINERID_LENGTH = 23;
+    public static final int SENSOR_STATE_DEVICEID_LENGTH = 23;
+    public static final int SENSOR_STATE_SOFTWAREVERSION_LENGTH = 3;
+    public static final int SENSOR_STATE_HARDWAREVERSION_LENGTH = 3;
+    public static final int SENSOR_STATE_INTERVAL_LENGTH = 2;
+    public static final int SENSOR_STATE_BATTERY_LENGTH = 1;
+    public static final int SENSOR_STATE_NUMSENSORS_LENGTH = 1;
+    public static final int SENSOR_STATE_RSSI_LENGTH = 1;
+
+    private byte[] mContainerId;
+    private byte[] mDeviceId;
+    private byte[] mSoftwareVersion;
+    private byte[] mHardwareVersion;
     private byte[] mInterval;
-    private byte[] mVersion;
-    private byte mState;
-    private byte[] mUtcStart;
     private byte mBattery;
+    private byte mNumSensors;
     private byte mRssi;
-    private byte[] mMinInsideTemp;
-    private byte[] mMaxInsideTemp;
 
     public SensorState() {
-        this.mId = new byte[4];
-        this.mInterval = new byte[2];
-        this.mVersion = new byte[3];
-        this.mState = 0;
-        this.mUtcStart = new byte[8];
+        this.mContainerId = new byte[SENSOR_STATE_CONTAINERID_LENGTH];
+        this.mDeviceId = new byte[SENSOR_STATE_DEVICEID_LENGTH];
+        this.mSoftwareVersion = new byte[SENSOR_STATE_SOFTWAREVERSION_LENGTH];
+        this.mHardwareVersion = new byte[SENSOR_STATE_HARDWAREVERSION_LENGTH];
+        this.mInterval = new byte[SENSOR_STATE_INTERVAL_LENGTH];
         this.mBattery = 0;
+        this.mNumSensors = 0;
         this.mRssi = 0;
-        this.mMinInsideTemp = new byte[2];
-        this.mMaxInsideTemp = new byte[2];
+    }
+
+    public static int getSensorStateLength() {
+        return SENSOR_STATE_CONTAINERID_LENGTH +
+            SENSOR_STATE_DEVICEID_LENGTH +
+            SENSOR_STATE_SOFTWAREVERSION_LENGTH +
+            SENSOR_STATE_HARDWAREVERSION_LENGTH +
+            SENSOR_STATE_INTERVAL_LENGTH +
+            SENSOR_STATE_BATTERY_LENGTH +
+            SENSOR_STATE_NUMSENSORS_LENGTH +
+            SENSOR_STATE_RSSI_LENGTH;
     }
 
     public boolean parseState(byte[] stateBuffer) {
-        Log.d(TAG+":"+ Utils.getLineNumber(), "stateBuffer len: "+stateBuffer.length);
-        this.mId = Arrays.copyOfRange(stateBuffer, 0, 4);
-        Log.d(TAG+":"+ Utils.getLineNumber(), "mId: "+Utils.convertBytesToReadableHexString(this.mId));
-        this.mInterval = Arrays.copyOfRange(stateBuffer, 4, 6);
-        this.mVersion = Arrays.copyOfRange(stateBuffer, 6, 9);
-        this.mState = stateBuffer[9];
-        this.mUtcStart = Arrays.copyOfRange(stateBuffer, 10, 18);
-        this.mBattery = stateBuffer[18];
-        this.mRssi = stateBuffer[19];
-        this.mMinInsideTemp = Arrays.copyOfRange(stateBuffer, 20, 22);
-        this.mMaxInsideTemp = Arrays.copyOfRange(stateBuffer, 22, 24);
+        Log.d(TAG+":"+ Utils.getLineNumber(), "stateBuffer: " +
+            Utils.convertBytesToHexString(stateBuffer) + " len: " + stateBuffer.length);
+        ByteBufferParser parser = new ByteBufferParser(stateBuffer);
+        mContainerId = parser.getNextBytes(SENSOR_STATE_CONTAINERID_LENGTH);
+        mDeviceId = parser.getNextBytes(SENSOR_STATE_DEVICEID_LENGTH);
+        mSoftwareVersion = parser.getNextBytes(SENSOR_STATE_SOFTWAREVERSION_LENGTH);
+        mHardwareVersion = parser.getNextBytes(SENSOR_STATE_HARDWAREVERSION_LENGTH);
+        mInterval = parser.getNextBytes(SENSOR_STATE_INTERVAL_LENGTH);
+        mBattery = parser.getNextByte();
+        mNumSensors = parser.getNextByte();
+        mRssi = parser.getNextByte();
         return true;
     }
 
-    public int getId() {
-        return Utils.convertBytesToInt(this.mId, 0, this.mId.length, ByteOrder.LITTLE_ENDIAN);
+    public String getContainerId() {
+        return Utils.convertBytesToString(mContainerId);
     }
 
-    public String getIdString() {
-        return Long.toHexString(Utils.convertIntToUnsignedLong(getId())).toUpperCase();
+    public String getDeviceId() {
+        return Utils.convertBytesToString(mDeviceId);
     }
 
-    public String getUtcStartString() {
-        Calendar cal = Calendar.getInstance();
-        long utcStart = Utils.convertBytesToLong(this.mUtcStart, 0, this.mUtcStart.length, ByteOrder.LITTLE_ENDIAN);
-        cal.setTimeInMillis(utcStart*1000);
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return dateFormat.format(cal.getTime());
+    public String getSoftwareVersion() {
+        return new String("v" + Utils.convertByteToUnsigned(mSoftwareVersion[0]) + "." +
+            Utils.convertByteToUnsigned(mSoftwareVersion[1]) + "." +
+            Utils.convertByteToUnsigned(mSoftwareVersion[2]));
     }
 
-    public double getMinInsideTemp() {
-        return ((double) Utils.convertBytesToInt(this.mMinInsideTemp, 0, this.mMinInsideTemp.length, ByteOrder.LITTLE_ENDIAN) / 10);
+    public String getHardwareVersion() {
+        return new String("v" + Utils.convertByteToUnsigned(mHardwareVersion[0]) + "." +
+            Utils.convertByteToUnsigned(mHardwareVersion[1]) + "." +
+            Utils.convertByteToUnsigned(mHardwareVersion[2]));
     }
 
-    public String getMinInsideTempString() {
-        return String.format("%.1f°", getMinInsideTemp());
-    }
-
-    public double getMaxInsideTemp() {
-        return ((double) Utils.convertBytesToInt(this.mMaxInsideTemp, 0, this.mMaxInsideTemp.length, ByteOrder.LITTLE_ENDIAN) / 10);
-    }
-
-    public String getMaxInsideTempString() {
-        return String.format("%.1f°", getMaxInsideTemp());
-    }
-
-    public int getRssi() {
-        return this.mRssi;
+    public int getInterval() {
+        return Utils.convertShortToUnsigned(Utils.convertBytesToShort(mInterval, 0,
+            mInterval.length, ByteOrder.LITTLE_ENDIAN));
     }
 
     public int getBattery() {
-        return mBattery;
+        return Utils.convertByteToUnsigned(mBattery);
     }
 
     public String getBatteryString() {
-        return Integer.toString(mBattery)+"%";
+        return getBattery() + "%";
+    }
+
+    public int getNumSensors() {
+        return Utils.convertByteToUnsigned(mNumSensors);
+    }
+
+    public byte getRssi() {
+        return mRssi;
     }
 }

@@ -15,7 +15,7 @@ android {
         minSdkVersion 23
         targetSdkVersion 26
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         signingConfig signingConfigs.config
     }
@@ -29,8 +29,14 @@ android {
     }
     flavorDimensions "default"
     productFlavors {
-        Mobile {}
-        Gateway {}
+        Mobile {
+            applicationIdSuffix ".mobile"
+            versionNameSuffix "-mobile"
+        }
+        Gateway {
+            applicationIdSuffix ".gateway"
+            versionNameSuffix "-gateway"
+        }
     }
     buildToolsVersion '28.0.3'
 }

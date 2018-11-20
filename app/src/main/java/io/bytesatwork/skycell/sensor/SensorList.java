@@ -75,10 +75,10 @@ public class SensorList {
     }
 
     @Nullable
-    public Sensor getSensorById(final int id) {
+    public Sensor getSensorByDeviceId(final String did) {
         synchronized (mSensorList) {
             for (Sensor s :  mSensorList) {
-                if (s.getId() == id) {
+                if (s.getDeviceId() == did) {
                     return s;
                 }
             }

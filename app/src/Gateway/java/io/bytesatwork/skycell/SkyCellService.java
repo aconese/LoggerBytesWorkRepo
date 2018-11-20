@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -22,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import io.bytesatwork.skycell.connectivity.BleService;
+import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
 
 public class SkyCellService extends Service {
@@ -29,14 +31,21 @@ public class SkyCellService extends Service {
     public static final String CHANNEL_ID = "io.bytesatwork.skycell.CHANNEL_ID";
     public static final String CHANNEL_NAME = "Channel";
 
-    public SkyCellApplication app = ((SkyCellApplication) SkyCellApplication.getAppContext());
+    private SkyCellApplication app;
     private static SkyCellService instance = null;
-    private final IBinder mBinder = new LocalBinder();
+    private final IBinder mBinder;
 
     private BluetoothAdapter mBluetoothAdapter;
     private static BleService mBleService = null;
     private boolean mBleServiceBound = false;
-    private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+    private ExecutorService mExecutor;
+    private long startTime = 0;
+
+    public SkyCellService() {
+        this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
+        this.mBinder = new LocalBinder();
+        this.mExecutor = Executors.newSingleThreadExecutor();
+    }
 
     public static boolean isRunning() {
         Log.d(TAG, "running: " + (instance != null));
@@ -49,13 +58,89 @@ public class SkyCellService extends Service {
         }
     }
 
+    //Handles various events fired by the Service.
+    private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (BleService.ACTION_SKYCELL_CONNECTED.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTED");
+                mBleService.sendGetState(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
+            } else if (BleService.ACTION_SKYCELL_CONNECTING.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTING");
+            } else if (BleService.ACTION_SKYCELL_DISCONNECTED.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DISCONNECTED");
+            } else if (BleService.ACTION_SKYCELL_CMD_ACK.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CMD_ACK");
+            } else if (BleService.ACTION_SKYCELL_STATE.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_STATE");
+                mBleService.sendReadExtrema(intent.getStringExtra(
+                    BleService.DEVICE_ADDRESS_SKYCELL));
+            } else if (BleService.ACTION_SKYCELL_DATA.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA");
+            } else if (BleService.ACTION_SKYCELL_DATA_ALL.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA_ALL");
+                Log.i(TAG+":"+Utils.getLineNumber(), "time readData: " +
+                    (System.currentTimeMillis() - startTime));
+                final Sensor sensor = app.mSensorList.getSensorByAddress(
+                    intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
+                if (sensor.upload()) {
+                    mBleService.sendClear(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
+                } else {
+                    Log.w(TAG+":"+Utils.getLineNumber(), "write to file failed!");
+                    mBleService.sendDisconnect(intent.getStringExtra(
+                        BleService.DEVICE_ADDRESS_SKYCELL));
+                }
+            } else if (BleService.ACTION_SKYCELL_EXTREMA.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA");
+            } else if (BleService.ACTION_SKYCELL_EXTREMA_ALL.equals(action)) {
+                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA_ALL");
+                mBleService.sendReadData(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL)
+                    , (System.currentTimeMillis() / 1000));
+                startTime = System.currentTimeMillis();
+            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+                int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
+
+                switch (state) {
+                    case BluetoothAdapter.STATE_TURNING_ON:
+                        //Indicates the local Bluetooth adapter is turning on. However local clients should wait for STATE_ON before attempting to use the adapter.
+                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_TURNING_ON");
+                        break;
+
+                    case BluetoothAdapter.STATE_ON:
+                        //Indicates the local Bluetooth adapter is on, and ready for use.
+                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_ON");
+                        break;
+
+                    case BluetoothAdapter.STATE_TURNING_OFF:
+                        //Indicates the local Bluetooth adapter is turning off. Local clients should immediately attempt graceful disconnection of any remote links.
+                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_TURNING_OFF");
+                        break;
+
+                    case BluetoothAdapter.STATE_OFF:
+                        //Indicates the local Bluetooth adapter is off.
+                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_OFF");
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+        }
+    };
+
     private static IntentFilter setupBroadcastReceiverFilter() {
         final IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(BleService.ACTION_SKYCELL_CONNECTED);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_CONNECTING);
         intentFilter.addAction(BleService.ACTION_SKYCELL_DISCONNECTED);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_CMD_ACK);
         intentFilter.addAction(BleService.ACTION_SKYCELL_STATE);
         intentFilter.addAction(BleService.ACTION_SKYCELL_DATA);
         intentFilter.addAction(BleService.ACTION_SKYCELL_DATA_ALL);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_EXTREMA);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_EXTREMA_ALL);
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
         return intentFilter;
@@ -120,11 +205,14 @@ public class SkyCellService extends Service {
 
             if (!initializeLocation()) {
                 stopSelf();
+                return;
             } else if (!initializeBluetooth()) {
                 stopSelf();
+                return;
             }
 
             if (mBleService == null) {
+                registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
                 bindService(new Intent(instance, BleService.class), mServiceConnection,
                     BIND_AUTO_CREATE);
             }
@@ -182,6 +270,7 @@ public class SkyCellService extends Service {
         instance = null;
 
         if (mBleServiceBound && mBleService != null) {
+            unregisterReceiver(mGattUpdateReceiver);
             unbindService(mServiceConnection);
             mBleServiceBound = false;
         }

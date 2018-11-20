@@ -32,6 +32,8 @@ import android.view.WindowManager;
 import android.widget.Toast;
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -120,6 +122,7 @@ public class MainActivity extends AppCompatActivity {
         intentFilter.addAction(BleService.ACTION_SKYCELL_STATE);
         intentFilter.addAction(BleService.ACTION_SKYCELL_DATA);
         intentFilter.addAction(BleService.ACTION_SKYCELL_DATA_ALL);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_EXTREMA);
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
         return intentFilter;
@@ -439,17 +442,15 @@ public class MainActivity extends AppCompatActivity {
 
         byte[] payload = record.getPayload();
 
-        // Get the Text Encoding
-        String textEncoding = ((payload[0] & 128) == 0) ? "UTF-8" : "UTF-16";
+        //Get the Text Encoding
+        Charset charset = ((payload[0] & 128) == 0) ? StandardCharsets.UTF_8 :
+            StandardCharsets.UTF_16;
 
-        // Get the Language Code
+        //Get the Language Code
         int languageCodeLength = payload[0] & 0063;
 
-        // String languageCode = new String(payload, 1, languageCodeLength, "US-ASCII");
-        // e.g. "en"
-
         // Get the Text
-        return new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, textEncoding);
+        return new String(payload, languageCodeLength + 1, payload.length - languageCodeLength - 1, charset);
     }
 
     public void changeFragment(String tag, String currentSensorAddress) {

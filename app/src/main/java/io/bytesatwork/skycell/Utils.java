@@ -7,13 +7,19 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 public final class Utils {
     private static final String TAG = Utils.class.getSimpleName();
-    static final protected char[] hexArray = "0123456789ABCDEF".toCharArray();
+    static final private char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    static final private int EPOCH_OFFSET = 946684800;
 
     //restrict instantiation
     private Utils() {
@@ -21,6 +27,10 @@ public final class Utils {
 
     public static String getLineNumber() {
         return String.valueOf(Thread.currentThread().getStackTrace()[3].getLineNumber());
+    }
+
+    public static boolean isGateway() {
+        return (BuildConfig.FLAVOR == Constants.FLAVOUR_GATEWAY);
     }
 
     public static byte[] convertObjectToBytes(Object object) throws IOException {
@@ -38,10 +48,17 @@ public final class Utils {
         }
     }
 
-    public static int convertBytesToInt(byte[] value, int offset, int len, ByteOrder order) {
-        //return (val[3] & 0xFF)<<24 | (val[2] & 0xFF)<<16 | (val[1] & 0xFF)<<8 | (val[0] & 0xFF);
+    public static short convertBytesToShort(byte[] value, int offset, int len, ByteOrder order) {
         if (len == 2) {
             return ByteBuffer.wrap(value, offset, len).order(order).getShort();
+        }
+
+        return 0;
+    }
+
+    public static int convertBytesToInt(byte[] value, int offset, int len, ByteOrder order) {
+        if (len == 2) {
+            return convertBytesToShort(value, offset, len, order);
         } else if (len == 4) {
             return ByteBuffer.wrap(value, offset, len).order(order).getInt();
         }
@@ -50,28 +67,142 @@ public final class Utils {
     }
 
     public static long convertBytesToLong(byte[] value, int offset, int len, ByteOrder order) {
-        //return (val[3] & 0xFF)<<24 | (val[2] & 0xFF)<<16 | (val[1] & 0xFF)<<8 | (val[0] & 0xFF);
-        if (len == 8) {
+        if (len == 2) {
+            return convertBytesToShort(value, offset, len, order);
+        } else if (len == 4) {
+            return convertBytesToInt(value, offset, len, order);
+        } else if (len == 8) {
             return ByteBuffer.wrap(value, offset, len).order(order).getLong();
         }
 
         return 0;
     }
 
-    public static String convertBytesToReadableHexString(byte[] value) {
-        char[] hexChars = new char[value.length * 4];
-        for ( int j = 0; j < value.length; j++ ) {
-            int v = value[j] & 0xFF;
-            hexChars[j * 4] = hexArray[v >>> 4];
-            hexChars[j * 4 + 1] = hexArray[v & 0x0F];
-            hexChars[j * 4 + 2] = ',';
-            hexChars[j * 4 + 3] = ' ';
-        }
-        String tmp = new String(Arrays.copyOfRange(hexChars, 0, hexChars.length-2));
-        return "["+tmp+"]";
+    public static byte[] convertShortToBytes(short value, ByteOrder order) {
+        return ByteBuffer.allocate(2).order(order).putShort(value).array();
     }
 
-    public static long convertIntToUnsignedLong(int x) {
-        return x & 0x00000000ffffffffL;
+    public static byte[] convertIntToBytes(int value, ByteOrder order) {
+        return ByteBuffer.allocate(4).order(order).putInt(value).array();
+    }
+
+    public static byte[] convertLongToBytes(long value, ByteOrder order) {
+        return ByteBuffer.allocate(8).order(order).putLong(value).array();
+    }
+
+    public static long convertBytesToTimeStamp(byte[] value, int offset, int len, ByteOrder order) {
+        if (len == 2 || len == 4) {
+            long timeStamp = (long) convertBytesToInt(value, offset, len, order);
+            return timeStamp + EPOCH_OFFSET;
+        } else if (len == 8) {
+            return convertBytesToLong(value, offset, len, order);
+        }
+
+        return 0;
+    }
+
+    public static String convertTimeStampToUTCString(long timeStamp) {
+        Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(timeStamp);
+        SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
+        dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
+        return dateFormat.format(cal.getTime());
+    }
+
+    public static String convertBytesToHexString(byte[] value) {
+        char[] hexChars = new char[value.length * 2];
+        for (int i = 0; i < value.length; ++i) {
+            int v = value[i] & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
+    public static String convertBytesToHexString(byte[] value, int offset, int len, ByteOrder
+        order, Class dataType) {
+        ByteBuffer buffer = ByteBuffer.wrap(value, offset, len).order(order);
+        String retString = new String();
+
+        if (dataType == Long.class) {
+            while (buffer.remaining() > 0) {
+                retString += String.format("%016X", (0xFFFFFFFFFFFFFFFFL & buffer.getLong()));
+            }
+            return retString;
+        } else if (dataType == Integer.class) {
+            while (buffer.remaining() > 0) {
+                retString += String.format("%08X", (0xFFFFFFFF & buffer.getInt()));
+            }
+            return retString;
+        } else if (dataType == Short.class) {
+            while (buffer.remaining() > 0) {
+                retString += String.format("%04X", (0xFFFF & buffer.getShort()));
+            }
+            return retString;
+        } else { //if (dataType == Byte.class)
+            return convertBytesToHexString(value);
+        }
+    }
+
+    public static String convertBytesToReadableHexString(byte[] value) {
+        if (value.length > 0) {
+            char[] hexChars = new char[value.length * 4];
+            for (int i = 0; i < value.length; ++i) {
+                int v = value[i] & 0xFF;
+                hexChars[i * 4] = HEX_ARRAY[v >>> 4];
+                hexChars[i * 4 + 1] = HEX_ARRAY[v & 0x0F];
+                hexChars[i * 4 + 2] = ',';
+                hexChars[i * 4 + 3] = ' ';
+            }
+            String tmp = new String(Arrays.copyOfRange(hexChars, 0, hexChars.length - 2));
+            return "[" + tmp + "]";
+        } else {
+            return "[]";
+        }
+    }
+
+    public static int indexOf(byte[] value, int from, byte search) {
+        if (value.length > 0 && from < value.length) {
+            for (int i = from; i < value.length; ++i) {
+                if (value[i] == search) {
+                    return i;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    public static String convertBytesToString(byte[] value) {
+        int len = indexOf(value, 0, (byte) 0x00);
+        if (len > 0) {
+            return new String(value, 0, len, StandardCharsets.UTF_8);
+        }
+
+        return "";
+    }
+
+    public static byte[] convertStringToBytes(String value) {
+        if (value.length() > 0) {
+            return value.getBytes(StandardCharsets.UTF_8);
+        }
+
+        return Constants.EMPTY_BYTES;
+    }
+
+    public static int convertByteToUnsigned(byte b) {
+        return b & 0xFF;
+    }
+
+    public static int convertShortToUnsigned(short s) {
+        return s & 0xFFFF;
+    }
+
+    public static long convertIntToUnsigned(int i) {
+        return i & 0xFFFFFFFFL;
+    }
+
+    public static BigInteger convertLongToUnsigned(long l) {
+        return new BigInteger(1, convertLongToBytes(l, ByteOrder.BIG_ENDIAN));
     }
 }

@@ -264,13 +264,13 @@ public class SensorListFragment extends Fragment {
                     drawable.setColorFilter(ContextCompat.getColor(mParentActivity.app.getAppContext(), R.color.colorContainerRed), PorterDuff.Mode.SRC_ATOP);
                 }
                 holder.mIdView.setText(mParentActivity.app.getApplicationContext().getString(R.string.label_id)
-                        + ": " + sensor.getIdString());
+                        + ": " + sensor.getDeviceId());
                 holder.mUtcStartView.setText(mParentActivity.app.getApplicationContext().getString(R.string.label_utc_start)
-                        + ": " + sensor.mState.getUtcStartString());
+                        + ": " + 0);
                 holder.mMinView.setText(mParentActivity.app.getApplicationContext().getString(R.string.label_min_temp_inside)
-                        + ": " + sensor.mState.getMinInsideTempString());
+                        + ": " + 0);
                 holder.mMaxView.setText(mParentActivity.app.getApplicationContext().getString(R.string.label_max_temp_inside)
-                        + ": " + sensor.mState.getMaxInsideTempString());
+                        + ": " + 0);
                 holder.mRssiView.setText(mParentActivity.app.getApplicationContext().getString(R.string.label_rssi)
                         + ": " + Integer.toString(sensor.mState.getRssi()));
 

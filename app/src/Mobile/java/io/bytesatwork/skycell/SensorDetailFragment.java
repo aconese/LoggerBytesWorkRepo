@@ -123,11 +123,11 @@ public class SensorDetailFragment extends Fragment {
             TextView id = myView.findViewById(R.id.id);
             id.setText(mActivity.app.getApplicationContext().getString(R.string.label_id)+":");
             TextView idValue = myView.findViewById(R.id.idValue);
-            idValue.setText(sensor.getIdString());
+            idValue.setText(sensor.getDeviceId());
             TextView utcStart = myView.findViewById(R.id.utcStart);
             utcStart.setText(mActivity.app.getApplicationContext().getString(R.string.label_utc_start)+":");
             TextView utcStartValue = myView.findViewById(R.id.utcStartValue);
-            utcStartValue.setText(sensor.mState.getUtcStartString());
+            utcStartValue.setText(0);
             ImageView batteryImage = myView.findViewById(R.id.batteryImage);
             batteryImage.setImageResource(R.drawable.ic_battery);
             batteryImage.getDrawable().clearColorFilter();
@@ -191,7 +191,8 @@ public class SensorDetailFragment extends Fragment {
         Sensor sensor = mActivity.app.mSensorList.getSensorByAddress(mActivity.mCurrentSensorAddress);
         if (sensor != null) {
             //TODO: check if read is already pending!
-            mActivity.mBleService.sendRead(sensor.getAddress());
+            mActivity.mBleService.sendReadData(sensor.getAddress(),
+                (System.currentTimeMillis() / 1000));
             showProgress();
         } /*else {
             //TODO: gray out
