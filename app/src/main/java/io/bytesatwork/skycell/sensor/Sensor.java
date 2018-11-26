@@ -3,6 +3,8 @@ package io.bytesatwork.skycell.sensor;
 import io.bytesatwork.skycell.BuildConfig;
 import io.bytesatwork.skycell.SynchronizedByteBuffer;
 import io.bytesatwork.skycell.Utils;
+import io.bytesatwork.skycell.connectivity.BleService;
+import io.bytesatwork.skycell.statemachine.SensorSessionFSM;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -18,6 +20,8 @@ public class Sensor {
     private final String mAddress;
     private short mReadPosition;
     private SensorDataHandler mDataHandler;
+    public SensorSessionFSM mSensorSessionFSM;
+    public static BleService mBleService;
 
     //state
     public SynchronizedByteBuffer mStateBuffer;
@@ -44,9 +48,10 @@ public class Sensor {
         this.mExtrema = null;
         this.mExtremaComplete = false;
         this.mDataHandler = null;
+        this.mSensorSessionFSM = null;
     }
 
-    public Sensor(String addr) {
+    public Sensor(BleService bleService, String addr) {
         this.mAddress = addr;
         this.mStateBuffer = new SynchronizedByteBuffer(SensorState.getSensorStateLength());
         this.mState = new SensorState();
@@ -58,6 +63,13 @@ public class Sensor {
         this.mExtrema = Collections.synchronizedList(new ArrayList<SensorExtrema>());
         this.mExtremaComplete = false;
         this.mDataHandler = new SensorDataHandler(this);
+        if (Utils.isGateway()) {
+            this.mSensorSessionFSM = new SensorSessionFSM(this);
+            this.mBleService = bleService;
+        } else {
+            this.mSensorSessionFSM = null;
+            this.mBleService = null;
+        }
     }
 
     public boolean parseState() {
@@ -220,5 +232,11 @@ public class Sensor {
 
     public boolean upload() {
         return mDataHandler.upload();
+    }
+
+    public void close() {
+        if (mSensorSessionFSM != null) {
+            mSensorSessionFSM.signalDisconnected();
+        }
     }
 }

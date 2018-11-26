@@ -1,0 +1,51 @@
+<?xml version='1.0'?>
+<!DOCTYPE qfsmproject SYSTEM 'qfsm.dtd'>
+<qfsmproject version="0.54" author="Qfsm">
+  <machine nummooreout="0" transfontitalic="0" draw_it="1" statefontsize="8" transfont="Helvetica" statefontitalic="0" author="" description="" version="" name="SkyCellGatewayFSM" arrowtype="1" numbits="5" statefontweight="50" statefont="Helvetica" numin="0" transfontsize="8" transfontweight="50" type="2" numout="0" initialstate="0">
+    <outputnames_moore></outputnames_moore>
+    <inputnames></inputnames>
+    <outputnames></outputnames>
+    <itransition ypos="144" endx="315" xpos="255" endy="144"/>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="144" code="0" xpos="355" linewidth="1">Start</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="529" code="1" xpos="337" linewidth="1">Advertising</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="334" code="7" xpos="566" linewidth="1">Error</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="332" code="18" xpos="341" linewidth="1">Initializing</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="748" code="2" xpos="340" linewidth="1">Stop</state>
+    <transition c1x="344.5763735284952" c2y="255.6547910617051" c1y="219.295738897524" description="" straight="1" type="2" ypos="182.936686733343" endx="342.0522672835293" xpos="345.8384266509781" endy="292.0138432258861" c2x="343.3143204060123">
+      <from>0</from>
+      <to>18</to>
+      <inputs default="0" any="0" invert="0">init</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="428.4175025655758" c2y="413.9415410999531" c1y="460.8707917499129" description="" straight="1" type="2" ypos="507.8000423998728" endx="543.4126433763204" xpos="370.9199321602035" endy="367.0122904499933" c2x="485.9150729709481">
+      <from>1</from>
+      <to>7</to>
+      <inputs default="0" any="0" invert="0">error</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="335.3213202827784" c2y="661.8627389493864" c1y="615.4165929673195" description="" straight="1" type="2" ypos="568.9704469852526" endx="335.0386106164316" xpos="335.4626751159518" endy="708.3088849314533" c2x="335.179965449605">
+      <from>1</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">shutdown</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="493.3736650607908" c2y="205.5243035315921" c1y="253.1211458790392" description="" straight="1" type="2" ypos="300.7179882264862" endx="392.4970108803906" xpos="543.8119921509908" endy="157.9274611841451" c2x="442.9353379705907">
+      <from>7</from>
+      <to>0</to>
+      <inputs default="0" any="0" invert="0">restart</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="429.2701420912795" c2y="332.415972111795" c1y="330.8319442235899" description="" straight="1" type="2" ypos="329.2479163353849" endx="526" xpos="380.9052131369193" endy="334" c2x="477.6350710456398">
+      <from>18</from>
+      <to>7</to>
+      <inputs default="0" any="0" invert="0">error</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="336.3448474725171" c2y="450.0460565567349" c1y="410.9539434432651" description="" straight="1" type="2" ypos="371.8618303297952" endx="333.6781808058504" xpos="337.6781808058504" endy="489.1381696702048" c2x="335.0115141391837">
+      <from>18</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">initialized</inputs>
+      <outputs></outputs>
+    </transition>
+  </machine>
+</qfsmproject>

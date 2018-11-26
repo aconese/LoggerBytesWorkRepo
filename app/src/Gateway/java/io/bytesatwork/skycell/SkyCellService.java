@@ -64,42 +64,7 @@ public class SkyCellService extends Service {
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
 
-            if (BleService.ACTION_SKYCELL_CONNECTED.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTED");
-                mBleService.sendGetState(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
-            } else if (BleService.ACTION_SKYCELL_CONNECTING.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTING");
-            } else if (BleService.ACTION_SKYCELL_DISCONNECTED.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DISCONNECTED");
-            } else if (BleService.ACTION_SKYCELL_CMD_ACK.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CMD_ACK");
-            } else if (BleService.ACTION_SKYCELL_STATE.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_STATE");
-                mBleService.sendReadExtrema(intent.getStringExtra(
-                    BleService.DEVICE_ADDRESS_SKYCELL));
-            } else if (BleService.ACTION_SKYCELL_DATA.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA");
-            } else if (BleService.ACTION_SKYCELL_DATA_ALL.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA_ALL");
-                Log.i(TAG+":"+Utils.getLineNumber(), "time readData: " +
-                    (System.currentTimeMillis() - startTime));
-                final Sensor sensor = app.mSensorList.getSensorByAddress(
-                    intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
-                if (sensor.upload()) {
-                    mBleService.sendClear(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
-                } else {
-                    Log.w(TAG+":"+Utils.getLineNumber(), "write to file failed!");
-                    mBleService.sendDisconnect(intent.getStringExtra(
-                        BleService.DEVICE_ADDRESS_SKYCELL));
-                }
-            } else if (BleService.ACTION_SKYCELL_EXTREMA.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA");
-            } else if (BleService.ACTION_SKYCELL_EXTREMA_ALL.equals(action)) {
-                Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA_ALL");
-                mBleService.sendReadData(intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL)
-                    , (System.currentTimeMillis() / 1000));
-                startTime = System.currentTimeMillis();
-            } else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
+            if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
                 int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, -1);
 
                 switch (state) {
@@ -125,6 +90,56 @@ public class SkyCellService extends Service {
 
                     default:
                         break;
+                }
+            } else {
+                final Sensor sensor = app.mSensorList.getSensorByAddress(
+                    intent.getStringExtra(BleService.DEVICE_ADDRESS_SKYCELL));
+
+                if (BleService.ACTION_SKYCELL_CONNECTED.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTED");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalConnected();
+                    }
+                } else if (BleService.ACTION_SKYCELL_CONNECTING.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CONNECTING");
+                } else if (BleService.ACTION_SKYCELL_DISCONNECTED.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DISCONNECTED");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalDisconnected();
+                    }
+                } else if (BleService.ACTION_SKYCELL_CMD_ACK.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_CMD_ACK");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalAck();
+                    }
+                } else if (BleService.ACTION_SKYCELL_STATE.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_STATE");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalStateComplete();
+                    }
+                } else if (BleService.ACTION_SKYCELL_DATA.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalData();
+                    }
+                } else if (BleService.ACTION_SKYCELL_DATA_ALL.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA_ALL");
+                    Log.i(TAG+":"+Utils.getLineNumber(), "time readData: " +
+                        (System.currentTimeMillis() - startTime) / 1000 + "sec");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalDataComplete();
+                    }
+                } else if (BleService.ACTION_SKYCELL_EXTREMA.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalExtrema();
+                    }
+                } else if (BleService.ACTION_SKYCELL_EXTREMA_ALL.equals(action)) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA_ALL");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalExtremaComplete();
+                        startTime = System.currentTimeMillis();
+                    }
                 }
             }
         }

@@ -1,0 +1,196 @@
+<?xml version='1.0'?>
+<!DOCTYPE qfsmproject SYSTEM 'qfsm.dtd'>
+<qfsmproject version="0.54" author="Qfsm">
+  <machine nummooreout="0" transfontitalic="0" draw_it="1" statefontsize="8" transfont="Helvetica" statefontitalic="0" author="" description="" version="" name="SensorSessionFSM" arrowtype="1" numbits="4" statefontweight="50" statefont="Helvetica" numin="0" transfontsize="8" transfontweight="50" type="2" numout="0" initialstate="0">
+    <outputnames_moore></outputnames_moore>
+    <inputnames></inputnames>
+    <outputnames></outputnames>
+    <itransition ypos="87" endx="137" xpos="77" endy="87"/>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="87" code="0" xpos="177" linewidth="1">WaitConnected</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="1027" code="3" xpos="779" linewidth="1">Disconnected</state>
+    <state pencolor="0" exit_actions="" radius="50" description="" finalstate="0" entry_actions="sendDisconnectRequest()" moore_outputs="" ypos="659" code="10" xpos="410" linewidth="1">WaitDisconnect</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendStatusRequest()" moore_outputs="" ypos="114" code="5" xpos="1570" linewidth="1">WaitStatus</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkStatus()" moore_outputs="" ypos="164" code="2" xpos="551" linewidth="1">Status</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="293" code="6" xpos="635" linewidth="1">DataTransfer</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="upload()" moore_outputs="" ypos="252" code="7" xpos="278" linewidth="1">Completed</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetNetwork()" moore_outputs="" ypos="839" code="8" xpos="305" linewidth="1">NotResponding</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkConnection()" moore_outputs="" ypos="79" code="12" xpos="419" linewidth="1">Connected</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="206" code="1" xpos="1259" linewidth="1">ExtremaTransfer</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendDataRequest()" moore_outputs="" ypos="383" code="4" xpos="817" linewidth="1">WaitData</state>
+    <state pencolor="0" exit_actions="" radius="50" description="" finalstate="0" entry_actions="sendExtremaRequest()" moore_outputs="" ypos="211" code="11" xpos="962" linewidth="1">WaitExtrema</state>
+    <transition c1x="271.0087147374508" c2y="82.57873909527937" c1y="84.67701177016353" description="" straight="1" type="2" ypos="86.77528444504769" endx="379.0274066493293" xpos="216.9993687815116" endy="80.48046642039522" c2x="325.0180606933901">
+      <from>0</from>
+      <to>12</to>
+      <inputs default="0" any="0" invert="0">connected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="543.9345807564786" c2y="897.7430713322591" c1y="798.5146833414282" description="" straight="1" type="2" ypos="699.2862953505974" endx="752.574884204319" xpos="439.6144290325583" endy="996.9714593230899" c2x="648.2547324803987">
+      <from>10</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="361.8920736580912" c2y="770.565954986722" c1y="734.1319099734441" description="" straight="1" type="2" ypos="697.697864960166" endx="329" xpos="378.3381104871369" endy="807" c2x="345.4460368290456">
+      <from>10</from>
+      <to>8</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1299.610602877694" c2y="714.1802607256219" c1y="430.090130362811" description="" straight="1" type="2" ypos="146" endx="806.8318086330808" xpos="1546" endy="998.2703910884329" c2x="1053.221205755387">
+      <from>5</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1216.71362017746" c2y="142.1979394319681" c1y="129.3088709240219" description="" straight="1" type="2" ypos="116.4198024160756" endx="589.9943402628747" xpos="1530.073260134752" endy="155.0870079399144" c2x="903.3539802201672">
+      <from>5</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">completedStatus</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1175.16645166996" c2y="490.4120362778671" c1y="310.3007533617736" description="" straight="1" type="2" ypos="130.18947044568" endx="458.6540143745005" xpos="1533.422670317689" endy="670.5233191939607" c2x="816.91023302223">
+      <from>5</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="697.039803152162" c2y="198.8790533083442" c1y="186.7581066166884" description="" straight="1" type="2" ypos="174.6371599250326" endx="912" xpos="589.559704728243" endy="211" c2x="804.519901576081">
+      <from>2</from>
+      <to>11</to>
+      <inputs default="0" any="0" invert="0">accepted</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="496.4081180439334" c2y="473.3773530918889" c1y="337.7228489011555" description="" straight="1" type="2" ypos="202.068344710422" endx="411.7845765256207" xpos="538.7198888030897" endy="609.0318572826225" c2x="454.096347284777">
+      <from>2</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">rejected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="684.5542811724042" c2y="770.4251317498383" c1y="551.1304503613284" description="" straight="1" type="2" ypos="331.8357689728185" endx="764.502149553802" xpos="644.5803469817052" endy="989.7198131383482" c2x="724.5282153631031">
+      <from>6</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="659.5424158506164" c2y="275.8874498011462" c1y="175.5365170607673" description="" straight="1" type="2" ypos="257.2970109393804" endx="671.7658012007223" xpos="653.0359799328254" endy="277.2432280568333" c2x="753.7735687166623">
+      <from>6</from>
+      <to>6</to>
+      <inputs default="0" any="0" invert="0">receiveDataPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="559.0526749049392" c2y="518.8976824322239" c1y="425.2191994087107" description="" straight="1" type="2" ypos="331.5407163851976" endx="428.5695338177052" xpos="624.2942454485562" endy="612.5761654557371" c2x="493.8111043613222">
+      <from>6</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="502.4415603057744" c2y="271.0385812627372" c1y="279.0883174095794" description="" straight="1" type="2" ypos="287.1380535564215" endx="316.4609579056329" xpos="595.4318615058452" endy="262.9888451158951" c2x="409.4512591057037">
+      <from>6</from>
+      <to>7</to>
+      <inputs default="0" any="0" invert="0">completedData</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="308.5434833469838" c2y="516.9994470219229" c1y="404.4997235109614" description="" straight="1" type="2" ypos="291.9999999999999" endx="369.6304438871051" xpos="278.0000030769231" endy="629.4991705328845" c2x="339.0869636170444">
+      <from>7</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">done</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="452.9402977356223" c2y="756.622021160355" c1y="521.1070638056921" description="" straight="1" type="2" ypos="285.5921064510291" endx="759.3895504146976" xpos="299.7156713960846" endy="992.136978515018" c2x="606.1649240751599">
+      <from>7</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="477.8875439467281" c2y="945.0388137030882" c1y="886.6044953131784" description="" straight="1" type="2" ypos="828.1701769232686" endx="746.6505566278724" xpos="343.5060376061559" endy="1003.473132092998" c2x="612.2690502873003">
+      <from>8</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="471.6150596420549" c2y="963.9464951753585" c1y="913.5421009913899" description="" straight="1" type="2" ypos="863.1377068074214" endx="741.0526680779794" xpos="336.8962554240927" endy="1014.350889359327" c2x="606.3338638600171">
+      <from>8</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">done</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="816.5130140314557" c2y="95.00743658940327" c1y="87.00371829470163" description="" straight="1" type="2" ypos="79" endx="1531.539042094367" xpos="459" endy="103.0111548841049" c2x="1174.026028062911">
+      <from>12</from>
+      <to>5</to>
+      <inputs default="0" any="0" invert="0">accepted</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="408.2779998351071" c2y="447.5857940811878" c1y="283.2313217004609" description="" straight="1" type="2" ypos="118.8768493197339" endx="393.1067623196616" xpos="415.8636185928299" endy="611.9402664619147" c2x="400.6923810773844">
+      <from>12</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">rejected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="-5.261925462254055" c2y="1299.184715420858" c1y="211.3902641983072" description="" straight="0" type="2" ypos="102.6006635736924" endx="744.7002829714983" xpos="386.7043551096841" endy="1047.579830217101" c2x="-1.132998800219866">
+      <from>12</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1311.443311361646" c2y="218.3650685983282" c1y="98.06622820717563" description="" straight="1" type="2" ypos="175.7724366884073" endx="1298.498139151078" xpos="1285.197221536714" endy="199.6835925082301" c2x="1378.361237755641">
+      <from>1</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">receiveExtremaPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1094.410818465719" c2y="741.5662109380073" c1y="492.2177907414404" description="" straight="1" type="2" ypos="242.8693705448734" endx="796.2582198921602" xpos="1243.487117752499" endy="990.9146311345742" c2x="945.3345191789399">
+      <from>1</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="977.1733819899941" c2y="512.4285770324723" c1y="375.6629608218538" description="" straight="1" type="2" ypos="238.8973446112353" endx="459.029033784546" xpos="1236.245556092718" endy="649.1941932430908" c2x="718.1012078872701">
+      <from>1</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1100.15528389207" c2y="320.2843060168755" c1y="271.9277752061058" description="" straight="1" type="2" ypos="223.571244395336" endx="854.3338242481223" xpos="1223.066013714043" endy="368.6408368276452" c2x="977.2445540700959">
+      <from>1</from>
+      <to>4</to>
+      <inputs default="0" any="0" invert="0">completedExtrema</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="798.1848345287727" c2y="798.796946560152" c1y="610.5052994345684" description="" straight="1" type="2" ypos="422.2136523089848" endx="776.339239579049" xpos="809.1076320036345" endy="987.0885936857358" c2x="787.2620370539108">
+      <from>4</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="680.6964300423977" c2y="563.4520284442976" c1y="489.4007359082126" description="" straight="1" type="2" ypos="415.3494433721276" endx="455.1430259411965" xpos="793.4731320929982" endy="637.5033209803826" c2x="567.9197279917971">
+      <from>4</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="742.3218183489039" c2y="332.5589753227554" c1y="352.0325299500508" description="" straight="1" type="2" ypos="371.5060845773462" endx="669.5915578644036" xpos="778.686948591154" endy="313.0854206954601" c2x="705.9566881066537">
+      <from>4</from>
+      <to>6</to>
+      <inputs default="0" any="0" invert="0">receiveDataPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1081.034647020825" c2y="204.36702740554" c1y="210.5787002166073" description="" straight="1" type="2" ypos="216.7903730276747" endx="1219.776772972363" xpos="1011.663584045056" endy="198.1553545944726" c2x="1150.405709996594">
+      <from>11</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">receiveExtremaPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="761.5543218200406" c2y="494.3340023765991" c1y="366.5922794496045" description="" straight="1" type="2" ypos="238.8505565226099" endx="443.7134682010666" xpos="920.4747486295277" endy="622.0757253035937" c2x="602.6338950105536">
+      <from>11</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="896.6279052130573" c2y="745.3170471492153" c1y="502.5173826413621" description="" straight="1" type="2" ypos="259.7177181335089" endx="788.3856213241559" xpos="950.749047157508" endy="988.1167116570684" c2x="842.5067632686066">
+      <from>11</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+  </machine>
+</qfsmproject>

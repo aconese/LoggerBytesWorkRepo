@@ -102,7 +102,7 @@ public class BleService extends Service {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     if (sensor == null) {
-                        sensor = new Sensor(device.getAddress());
+                        sensor = new Sensor(BleService.this, device.getAddress());
                         app.mSensorList.addSensor(sensor);
 
                         broadcastUpdate(ACTION_SKYCELL_CONNECTING, device.getAddress());
@@ -110,6 +110,7 @@ public class BleService extends Service {
                     }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     if (sensor != null) {
+                        sensor.close();
                         app.mSensorList.removeSensor(sensor);
 
                         Log.i(TAG + ":" + Utils.getLineNumber(), "Disconnected from GATT server.");
@@ -120,6 +121,7 @@ public class BleService extends Service {
             } else { //Connection timeout
                 Log.e(TAG + ":" + Utils.getLineNumber(), "GATT error (133)!");
                 if (sensor != null) {
+                    sensor.close();
                     app.mSensorList.removeSensor(sensor);
 
                     Log.i(TAG + ":" + Utils.getLineNumber(), "Disconnected from GATT server.");
@@ -878,6 +880,7 @@ public class BleService extends Service {
         Sensor sensor = app.mSensorList.getSensorByAddress(addr);
         mRequestPending = false; //clear request pending
         if (sensor != null) {
+            sensor.close();
             app.mSensorList.removeSensor(sensor);
             broadcastUpdate(ACTION_SKYCELL_DISCONNECTED, addr);
         }
@@ -905,6 +908,7 @@ public class BleService extends Service {
             Sensor sensor = app.mSensorList.getSensorByAddress(gatt.getDevice().getAddress());
             mRequestPending = false; //clear request pending
             if (sensor != null) {
+                sensor.close();
                 app.mSensorList.removeSensor(sensor);
                 broadcastUpdate(ACTION_SKYCELL_DISCONNECTED, gatt.getDevice().getAddress());
             }
