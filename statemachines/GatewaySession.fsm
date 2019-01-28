@@ -12,7 +12,7 @@
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendStatusRequest()" moore_outputs="" ypos="114" code="5" xpos="1570" linewidth="1">WaitStatus</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkStatus()" moore_outputs="" ypos="164" code="2" xpos="551" linewidth="1">Status</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="293" code="6" xpos="635" linewidth="1">DataTransfer</state>
-    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="upload()" moore_outputs="" ypos="252" code="7" xpos="278" linewidth="1">Completed</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="writeToFile()" moore_outputs="" ypos="252" code="7" xpos="278" linewidth="1">Completed</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetNetwork()" moore_outputs="" ypos="839" code="8" xpos="305" linewidth="1">NotResponding</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkConnection()" moore_outputs="" ypos="79" code="12" xpos="419" linewidth="1">Connected</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="206" code="1" xpos="1259" linewidth="1">ExtremaTransfer</state>

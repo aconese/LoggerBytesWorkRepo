@@ -333,7 +333,7 @@ public class BleService extends Service {
                 } else if (ack == Constants.ACK_CMD_PENDING) {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "Ack: ACK_CMD_PENDING");
                 } else if (ack == Constants.ACK_UNKNOWN) {
-                    Log.d(TAG + ":" + Utils.getLineNumber(), "Ack: ACK_UNKNOWN");
+                    Log.w(TAG + ":" + Utils.getLineNumber(), "Ack: ACK_UNKNOWN");
                 } else { //Read-Position
                     Log.d(TAG + ":" + Utils.getLineNumber(), "Ack: Read Position: " + ack);
                     sensor.setReadPosition(ack);

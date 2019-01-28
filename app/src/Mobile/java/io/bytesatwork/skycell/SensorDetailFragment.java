@@ -2,6 +2,7 @@ package io.bytesatwork.skycell;
 
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.sensor.Sensor;
+import io.bytesatwork.skycell.Constants;
 
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
@@ -160,7 +161,8 @@ public class SensorDetailFragment extends Fragment {
                         if (writeFile(json, mActivity.mCurrentSensorAddress + ".txt")) {
                             Log.i(TAG + ":" + Utils.getLineNumber(), "File write ok");
                         }
-                        mExecutor.execute(new FileUploadTask(json, mActivity.mCurrentSensorAddress + ".json", mActivity.getSettings()));
+                        mExecutor.execute(new FileUploadTask(json, mActivity.mCurrentSensorAddress +
+                            Constants.FILE_ENDING, mActivity.getSettings()));
                         mActivity.mBleService.sendClear(sensor.getAddress());
                     }
                     uploadButton.setEnabled(true);

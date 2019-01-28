@@ -1,6 +1,11 @@
 package io.bytesatwork.skycell.sensor;
 
+import android.os.Environment;
+import android.util.Log;
+
 import io.bytesatwork.skycell.BuildConfig;
+import io.bytesatwork.skycell.Constants;
+import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.SynchronizedByteBuffer;
 import io.bytesatwork.skycell.Utils;
 import io.bytesatwork.skycell.connectivity.BleService;
@@ -10,16 +15,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class Sensor {
     private static final String TAG = Sensor.class.getSimpleName();
-
+    private SkyCellApplication app;
     private final String mAddress;
     private short mReadPosition;
-    private SensorDataHandler mDataHandler;
     public SensorSessionFSM mSensorSessionFSM;
     public static BleService mBleService;
 
@@ -37,6 +44,7 @@ public class Sensor {
     private boolean mExtremaComplete;
 
     private Sensor() {
+        this.app = null;
         this.mAddress = "";
         this.mStateBuffer = null;
         this.mState = null;
@@ -47,11 +55,11 @@ public class Sensor {
         this.mExtremaBuffer = null;
         this.mExtrema = null;
         this.mExtremaComplete = false;
-        this.mDataHandler = null;
         this.mSensorSessionFSM = null;
     }
 
     public Sensor(BleService bleService, String addr) {
+        this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         this.mAddress = addr;
         this.mStateBuffer = new SynchronizedByteBuffer(SensorState.getSensorStateLength());
         this.mState = new SensorState();
@@ -62,7 +70,6 @@ public class Sensor {
         this.mExtremaBuffer = new SynchronizedByteBuffer(SensorExtrema.getSensorExtremaLength());
         this.mExtrema = Collections.synchronizedList(new ArrayList<SensorExtrema>());
         this.mExtremaComplete = false;
-        this.mDataHandler = new SensorDataHandler(this);
         if (Utils.isGateway()) {
             this.mSensorSessionFSM = new SensorSessionFSM(this);
             this.mBleService = bleService;
@@ -171,56 +178,56 @@ public class Sensor {
         JSONObject object = new JSONObject();
         try {
             JSONObject sensor = new JSONObject();
-                sensor.put("ContainerId", mState.getContainerId());
-                sensor.put("DeviceId", mState.getDeviceId());
-                sensor.put("SoftwareVersion", mState.getSoftwareVersion());
-                sensor.put("HardwareVersion", mState.getHardwareVersion());
-                sensor.put("CurrentIntervalSec", mState.getInterval());
-                sensor.put("BatteryState", mState.getBattery());
-                sensor.put("NumSensors", mState.getNumSensors());
+            sensor.put("ContainerId", mState.getContainerId());
+            sensor.put("DeviceId", mState.getDeviceId());
+            sensor.put("SoftwareVersion", mState.getSoftwareVersion());
+            sensor.put("HardwareVersion", mState.getHardwareVersion());
+            sensor.put("CurrentIntervalSec", mState.getInterval());
+            sensor.put("BatteryState", mState.getBattery());
+            sensor.put("NumSensors", mState.getNumSensors());
             object.put("SensorDevice", sensor);
             JSONObject readout = new JSONObject();
-                readout.put("TimestampUTC", getUTCReadoutString());
-                JSONObject gateway = new JSONObject();
-                    gateway.put("Id", "1234"); //TODO: Define unique id
-                    gateway.put("Type", BuildConfig.FLAVOR);
-                    gateway.put("SoftwareVersion", "v" + BuildConfig.VERSION_NAME);
-                    JSONObject position = new JSONObject(); //TODO: Get gps position
-                        position.put("Latitude", new Double(47.4951597));
-                        position.put("Longitude", new Double(8.7156737));
-                        position.put("Altitude", new Double(446));
-                gateway.put("Position", position);
-                readout.put("Gateway", gateway);
-                JSONArray extrema = new JSONArray();
-                synchronized (mExtrema) {
-                    for (SensorExtrema sensorExtrema : mExtrema) {
-                        JSONObject minmax = new JSONObject();
-                        minmax.put("Type", sensorExtrema.getType());
-                        minmax.put("TimestampUTC", sensorExtrema.getUTCTimeStamp());
-                        minmax.put("PeriodStartTimestampUTC",
-                            sensorExtrema.getUTCPeriodStartTimeStamp());
-                        minmax.put("SensorId", sensorExtrema.getSensorId());
-                        minmax.put("Value", sensorExtrema.getValue());
-                        minmax.put("BinaryData", sensorExtrema.getBinaryData());
-                        minmax.put("Signature", sensorExtrema.getSignature());
-                        extrema.put(minmax);
-                    }
+            readout.put("TimestampUTC", getUTCReadoutString());
+            JSONObject gateway = new JSONObject();
+            gateway.put("Id", "1234"); //TODO: Define unique id
+            gateway.put("Type", BuildConfig.FLAVOR);
+            gateway.put("SoftwareVersion", "v" + BuildConfig.VERSION_NAME);
+            JSONObject position = new JSONObject(); //TODO: Get gps position
+            position.put("Latitude", new Double(47.4951597));
+            position.put("Longitude", new Double(8.7156737));
+            position.put("Altitude", new Double(446));
+            gateway.put("Position", position);
+            readout.put("Gateway", gateway);
+            JSONArray extrema = new JSONArray();
+            synchronized (mExtrema) {
+                for (SensorExtrema sensorExtrema : mExtrema) {
+                    JSONObject minmax = new JSONObject();
+                    minmax.put("Type", sensorExtrema.getType());
+                    minmax.put("TimestampUTC", sensorExtrema.getUTCTimeStamp());
+                    minmax.put("PeriodStartTimestampUTC",
+                        sensorExtrema.getUTCPeriodStartTimeStamp());
+                    minmax.put("SensorId", sensorExtrema.getSensorId());
+                    minmax.put("Value", sensorExtrema.getValue());
+                    minmax.put("BinaryData", sensorExtrema.getBinaryData());
+                    minmax.put("Signature", sensorExtrema.getSignature());
+                    extrema.put(minmax);
                 }
-                readout.put("Extrema", extrema);
-                JSONArray data = new JSONArray();
-                synchronized (mData) {
-                    for (SensorMeasurement sensorMeasurement : mData) {
-                        JSONObject measurement = new JSONObject();
-                        measurement.put("TimestampUTC", sensorMeasurement.getUTCTimeStamp());
-                        JSONArray values = new JSONArray();
-                        for (String sensorMeasurementValue : sensorMeasurement.getValues()) {
-                            values.put(sensorMeasurementValue);
-                        }
-                        measurement.put("Values", values);
-                        data.put(measurement);
+            }
+            readout.put("Extrema", extrema);
+            JSONArray data = new JSONArray();
+            synchronized (mData) {
+                for (SensorMeasurement sensorMeasurement : mData) {
+                    JSONObject measurement = new JSONObject();
+                    measurement.put("TimestampUTC", sensorMeasurement.getUTCTimeStamp());
+                    JSONArray values = new JSONArray();
+                    for (String sensorMeasurementValue : sensorMeasurement.getValues()) {
+                        values.put(sensorMeasurementValue);
                     }
+                    measurement.put("Values", values);
+                    data.put(measurement);
                 }
-                readout.put("Data", data);
+            }
+            readout.put("Data", data);
             object.put("Readout", readout);
             //Log.i(TAG + ":" + Utils.getLineNumber(), "JSON:\n"+object.toString(4));
         } catch (JSONException e) {
@@ -230,8 +237,38 @@ public class Sensor {
         return object.toString();
     }
 
-    public boolean upload() {
-        return mDataHandler.upload();
+    public boolean writeToFile() {
+        String fileName = getAddress() + "_" + System.currentTimeMillis() + Constants.FILE_ENDING;
+        String json = convertToJSONString();
+        boolean ok = false;
+
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+            File file = new File(app.getApplicationContext().getExternalFilesDir(null)
+                .getAbsolutePath(), fileName);
+            Log.i(TAG + ":" + Utils.getLineNumber(), "Write: File: " + file.getAbsolutePath());
+            try {
+                //Open file
+                FileOutputStream fos = new FileOutputStream(file, false);
+
+                //Get file lock
+                FileLock lock = fos.getChannel().lock();
+
+                //Write
+                fos.write(json.getBytes());
+                fos.flush();
+
+                //Release lock
+                lock.release();
+
+                //Close file
+                fos.close();
+                ok = true;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return ok;
     }
 
     public void close() {

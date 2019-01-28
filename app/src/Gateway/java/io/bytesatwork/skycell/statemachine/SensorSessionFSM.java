@@ -56,10 +56,11 @@ public class SensorSessionFSM {
         //TODO: implement
     }
 
-    public void upload() {
-        mSensor.mBleService.sendClear(mSensor.getAddress());
-        mSensor.upload();
-        //signalDone(); //disconnect
+    public void writeToFile() {
+        if (mSensor.writeToFile()) {
+            mSensor.mBleService.sendClear(mSensor.getAddress());
+        }
+        signalDone(); //disconnect
     }
 
     public void sendDisconnectRequest() {

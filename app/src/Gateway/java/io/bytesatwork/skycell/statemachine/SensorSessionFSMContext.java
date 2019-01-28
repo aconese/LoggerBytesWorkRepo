@@ -676,7 +676,7 @@ public class SensorSessionFSMContext
             {
                 SensorSessionFSM ctxt = context.getOwner();
 
-            ctxt.upload();
+            ctxt.writeToFile();
             return;
         }
 

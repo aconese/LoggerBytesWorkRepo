@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import io.bytesatwork.skycell.connectivity.BleService;
+import io.bytesatwork.skycell.connectivity.CloudUploader;
 import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
 
@@ -40,18 +41,20 @@ public class SkyCellService extends Service {
     private boolean mBleServiceBound = false;
     private ExecutorService mExecutor;
     private long startTime = 0;
+    private CloudUploader mCloudUploader;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         this.mBinder = new LocalBinder();
         this.mExecutor = Executors.newSingleThreadExecutor();
+        this.mCloudUploader = new CloudUploader();
     }
 
     public static boolean isRunning() {
         Log.d(TAG, "running: " + (instance != null));
         return instance != null;
     }
-
+    
     public class LocalBinder extends Binder {
         public SkyCellService getService() {
             return SkyCellService.this;
@@ -215,7 +218,13 @@ public class SkyCellService extends Service {
 
         public void initialize() {
             if (app != null) {
+                //Create new SensorList
                 app.mSensorList = new SensorList();
+                //Create or load SharedPreferences
+                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+                long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
+                Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
+                    " (Upload URL: " + url + ", Rate: " + rate + "secs)");
             }
 
             if (!initializeLocation()) {
@@ -231,6 +240,8 @@ public class SkyCellService extends Service {
                 bindService(new Intent(instance, BleService.class), mServiceConnection,
                     BIND_AUTO_CREATE);
             }
+
+            mCloudUploader.start();
         }
 
         public boolean initializeLocation() {
@@ -291,6 +302,7 @@ public class SkyCellService extends Service {
         }
         mBleService = null;
         mExecutor.shutdown();
+        mCloudUploader.stop();
 
         super.onDestroy();
     }
