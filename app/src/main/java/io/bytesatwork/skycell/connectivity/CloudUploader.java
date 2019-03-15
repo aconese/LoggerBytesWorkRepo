@@ -2,6 +2,7 @@ package io.bytesatwork.skycell.connectivity;
 
 import android.os.Environment;
 import android.util.Log;
+import javax.net.ssl.HttpsURLConnection;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -38,8 +39,9 @@ public class CloudUploader {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Start");
         String path = app.getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
         String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+        String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
         long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
-        mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url), rate, rate, SECONDS);
+        mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate, SECONDS);
     }
 
     public void stop() {
@@ -50,10 +52,12 @@ public class CloudUploader {
     private class FileUploadTask implements Runnable {
         File mDirectory;
         String mUrl;
+        String mApikey;
 
-        public FileUploadTask(String path, String url) {
+        public FileUploadTask(String path, String url, String apikey) {
             this.mDirectory = new File(path);
             this.mUrl = url.endsWith("/") ?  url : url + "/";
+            this.mApikey = apikey;
         }
 
         public void run() {
@@ -101,13 +105,14 @@ public class CloudUploader {
 
             try {
                 //header
-                Log.i(TAG + ":" + Utils.getLineNumber(), "Send JSON to: " + mUrl + fileName);
-                URL url = new URL(mUrl + fileName);
-                connection = (HttpURLConnection) url.openConnection();
+                Log.i(TAG + ":" + Utils.getLineNumber(), "Send JSON to: " + mUrl);
+                URL url = new URL(mUrl);
+                connection = (HttpsURLConnection) url.openConnection();
                 connection.setDoOutput(true);
-                connection.setRequestMethod("PUT");
+                connection.setRequestMethod("POST");
                 connection.setRequestProperty("Accept", "application/json");
-                connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("APIKEY", mApikey);
 
                 //send json
                 DataOutputStream out = new DataOutputStream(connection.getOutputStream());

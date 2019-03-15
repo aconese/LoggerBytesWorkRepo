@@ -32,5 +32,6 @@
     <string name="pref_cat_server">Server</string>
     <string name="pref_server_ip">IP/Hostname</string>
     <string name="default_pref_server_ip">0.0.0.0</string>
-    <string name="default_pref_server_url">http://bytesatwork.ch:8080/</string>
+    <string name="default_pref_server_url">https://atlantis.skycell.ch/Backend/external_API/SCTS/SENSOR</string>
+    <string name="default_pref_api_key">70E1F1A9E22E1F27E7F6E572771A6FF3BD62C5CCB58306A162A3BDA49776A09FF6C63BE30EF1DAAC06AABAAA7D920356035A018285695448A99B66D24146913B</string>
 </resources>

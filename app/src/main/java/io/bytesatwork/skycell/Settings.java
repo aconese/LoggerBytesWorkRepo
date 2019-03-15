@@ -8,6 +8,8 @@ public class Settings {
         "io.bytesatwork.skycell.SHARED_PREFERENCES_SERVER_URL";
     public static final String SHARED_PREFERENCES_UPLOAD_RATE_SECS =
         "io.bytesatwork.skycell.SHARED_PREFERENCES_UPLOAD_RATE_SECS";
+    public static final String SHARED_PREFERENCES_APIKEY =
+         "io.bytesatwork.skycell.SHARED_PREFERENCES_APIKEY";
     private static final String SHARED_PREFERENCES = "io.bytesatwork.skycell.SHARED_PREFERENCES";
     private SharedPreferences mPreferences;
     private SkyCellApplication app;
@@ -25,6 +27,8 @@ public class Settings {
             case SHARED_PREFERENCES_SERVER_URL:
                 setting = loadSettings(key, app.getString(R.string.default_pref_server_url));
                 break;
+            case SHARED_PREFERENCES_APIKEY:
+                setting = loadSettings(key, app.getString(R.string.default_pref_api_key));
             default:
                 break;
         }
