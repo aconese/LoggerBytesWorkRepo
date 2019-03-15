@@ -178,57 +178,57 @@ public class Sensor {
         JSONObject object = new JSONObject();
         try {
             JSONObject sensor = new JSONObject();
-            sensor.put("ContainerId", mState.getContainerId());
-            sensor.put("DeviceId", mState.getDeviceId());
-            sensor.put("SoftwareVersion", mState.getSoftwareVersion());
-            sensor.put("HardwareVersion", mState.getHardwareVersion());
-            sensor.put("CurrentIntervalSec", mState.getInterval());
-            sensor.put("BatteryState", mState.getBattery());
-            sensor.put("NumSensors", mState.getNumSensors());
-            object.put("SensorDevice", sensor);
+            sensor.put("containerId", mState.getContainerId());
+            sensor.put("deviceId", mState.getDeviceId());
+            sensor.put("softwareVersion", mState.getSoftwareVersion());
+            sensor.put("hardwareVersion", mState.getHardwareVersion());
+            sensor.put("currentIntervalSec", mState.getInterval());
+            sensor.put("batteryState", mState.getBattery());
+            sensor.put("numSensors", mState.getNumSensors());
+            object.put("sensorDevice", sensor);
             JSONObject readout = new JSONObject();
-            readout.put("TimestampUTC", getUTCReadoutString());
+            readout.put("timestampUTC", getUTCReadoutString());
             JSONObject gateway = new JSONObject();
-            gateway.put("Id", "1234"); //TODO: Define unique id
-            gateway.put("Type", BuildConfig.FLAVOR);
-            gateway.put("SoftwareVersion", "v" + BuildConfig.VERSION_NAME);
+            gateway.put("id", "1234"); //TODO: Define unique id
+            gateway.put("type", BuildConfig.FLAVOR);
+            gateway.put("softwareVersion", "v" + BuildConfig.VERSION_NAME);
             JSONObject position = new JSONObject(); //TODO: Get gps position
-            position.put("Latitude", new Double(47.4951597));
-            position.put("Longitude", new Double(8.7156737));
-            position.put("Altitude", new Double(446));
-            gateway.put("Position", position);
-            readout.put("Gateway", gateway);
+            position.put("latitude", new Double(47.4951597));
+            position.put("longitude", new Double(8.7156737));
+            position.put("altitude", new Double(446));
+            gateway.put("position", position);
+            readout.put("gateway", gateway);
             JSONArray extrema = new JSONArray();
             synchronized (mExtrema) {
                 for (SensorExtrema sensorExtrema : mExtrema) {
                     JSONObject minmax = new JSONObject();
-                    minmax.put("Type", sensorExtrema.getType());
-                    minmax.put("TimestampUTC", sensorExtrema.getUTCTimeStamp());
-                    minmax.put("PeriodStartTimestampUTC",
+                    minmax.put("type", sensorExtrema.getType());
+                    minmax.put("timestampUTC", sensorExtrema.getUTCTimeStamp());
+                    minmax.put("periodStartTimestampUTC",
                         sensorExtrema.getUTCPeriodStartTimeStamp());
-                    minmax.put("SensorId", sensorExtrema.getSensorId());
-                    minmax.put("Value", sensorExtrema.getValue());
-                    minmax.put("BinaryData", sensorExtrema.getBinaryData());
-                    minmax.put("Signature", sensorExtrema.getSignature());
+                    minmax.put("sensorId", sensorExtrema.getSensorId());
+                    minmax.put("value", sensorExtrema.getValue());
+                    minmax.put("binaryData", sensorExtrema.getBinaryData());
+                    minmax.put("signature", sensorExtrema.getSignature());
                     extrema.put(minmax);
                 }
             }
-            readout.put("Extrema", extrema);
+            readout.put("extrema", extrema);
             JSONArray data = new JSONArray();
             synchronized (mData) {
                 for (SensorMeasurement sensorMeasurement : mData) {
                     JSONObject measurement = new JSONObject();
-                    measurement.put("TimestampUTC", sensorMeasurement.getUTCTimeStamp());
+                    measurement.put("timestampUTC", sensorMeasurement.getUTCTimeStamp());
                     JSONArray values = new JSONArray();
                     for (String sensorMeasurementValue : sensorMeasurement.getValues()) {
                         values.put(sensorMeasurementValue);
                     }
-                    measurement.put("Values", values);
+                    measurement.put("values", values);
                     data.put(measurement);
                 }
             }
-            readout.put("Data", data);
-            object.put("Readout", readout);
+            readout.put("data", data);
+            object.put("readout", readout);
             //Log.i(TAG + ":" + Utils.getLineNumber(), "JSON:\n"+object.toString(4));
         } catch (JSONException e) {
             e.printStackTrace();
