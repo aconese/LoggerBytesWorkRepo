@@ -175,11 +175,10 @@ public final class Utils {
 
     public static String convertBytesToString(byte[] value) {
         int len = indexOf(value, 0, (byte) 0x00);
-        if (len > 0) {
-            return new String(value, 0, len, StandardCharsets.UTF_8);
+        if (len < 0) {
+            len = value.length;
         }
-
-        return "";
+        return new String(value, 0, len, StandardCharsets.UTF_8);
     }
 
     public static byte[] convertStringToBytes(String value) {
