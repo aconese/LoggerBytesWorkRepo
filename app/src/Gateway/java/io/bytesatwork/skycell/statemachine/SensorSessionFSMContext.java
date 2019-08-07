@@ -954,6 +954,16 @@ public class SensorSessionFSMContext
         }
 
         @Override
+        protected void completedData(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.Completed);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
         protected void disconnected(SensorSessionFSMContext context)
         {
 
@@ -1019,6 +1029,16 @@ public class SensorSessionFSMContext
         protected void Default(SensorSessionFSMContext context)
         {
 
+            return;
+        }
+
+        @Override
+        protected void completedExtrema(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.WaitData);
+            (context.getState()).entry(context);
             return;
         }
 

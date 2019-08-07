@@ -174,6 +174,12 @@
       <inputs default="0" any="0" invert="0">receiveDataPackage</inputs>
       <outputs></outputs>
     </transition>
+    <transition c1x="620.8490945476702" c2y="311.3739466398716" c1y="342.4636220322813" description="" straight="1" type="2" ypos="373.553297424691" endx="306.2842712474619" xpos="778.1315061977743" endy="280.2842712474619" c2x="463.5666828975661">
+      <from>4</from>
+      <to>7</to>
+      <inputs default="0" any="0" invert="0">completedData</inputs>
+      <outputs></outputs>
+    </transition>
     <transition c1x="1081.034647020825" c2y="204.36702740554" c1y="210.5787002166073" description="" straight="1" type="2" ypos="216.7903730276747" endx="1219.776772972363" xpos="1011.663584045056" endy="198.1553545944726" c2x="1150.405709996594">
       <from>11</from>
       <to>1</to>
@@ -190,6 +196,12 @@
       <from>11</from>
       <to>3</to>
       <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="902.0105116451884" c2y="320.390097809266" c1y="284.8091807592259" description="" straight="1" type="2" ypos="249.2282637091858" endx="846.4861656080296" xpos="929.7726846637678" endy="355.9710148593061" c2x="874.248338626609">
+      <from>11</from>
+      <to>4</to>
+      <inputs default="0" any="0" invert="0">completedExtrema</inputs>
       <outputs></outputs>
     </transition>
   </machine>
