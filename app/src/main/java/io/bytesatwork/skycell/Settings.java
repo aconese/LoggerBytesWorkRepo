@@ -25,10 +25,10 @@ public class Settings {
 
         switch (key) {
             case SHARED_PREFERENCES_SERVER_URL:
-                setting = loadSettings(key, app.getString(R.string.default_pref_server_url));
+                setting = app.getString(R.string.default_pref_server_url);
                 break;
             case SHARED_PREFERENCES_APIKEY:
-                setting = loadSettings(key, app.getString(R.string.default_pref_api_key));
+                setting = app.getString(R.string.default_pref_api_key);
             default:
                 break;
         }
