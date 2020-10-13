@@ -7,6 +7,9 @@ import android.util.Log;
 
 import java.io.Serializable;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class SensorState implements Serializable {
     private static final String TAG = SensorState.class.getSimpleName();
@@ -28,6 +31,7 @@ public class SensorState implements Serializable {
     private byte mBattery;
     private byte mNumSensors;
     private byte mRssi;
+    public List<SensorInfo> mSensorInfos = new ArrayList<SensorInfo>();
 
     public SensorState() {
         this.mContainerId = new byte[SENSOR_STATE_CONTAINERID_LENGTH];
@@ -51,6 +55,10 @@ public class SensorState implements Serializable {
             SENSOR_STATE_RSSI_LENGTH;
     }
 
+    public int getSensorInfosLength() {
+        return mNumSensors * SensorInfo.getSensorInfoLength();
+    }
+
     public boolean parseState(byte[] stateBuffer) {
         Log.d(TAG+":"+ Utils.getLineNumber(), "stateBuffer: " +
             Utils.convertBytesToHexString(stateBuffer) + " len: " + stateBuffer.length);
@@ -63,6 +71,18 @@ public class SensorState implements Serializable {
         mBattery = parser.getNextByte();
         mNumSensors = parser.getNextByte();
         mRssi = parser.getNextByte();
+
+        return true;
+    }
+
+    public boolean parseSensorInfos(byte[] infoBuffer, ByteOrder order) {
+        Log.d(TAG+":"+ Utils.getLineNumber(), "infobuffer: " +
+                Utils.convertBytesToHexString(infoBuffer) + " len: " + infoBuffer.length);
+        ByteBufferParser parser = new ByteBufferParser(infoBuffer);
+
+        for (int i = 0; i < mNumSensors; i++) {
+            mSensorInfos.add(new SensorInfo(parser.getNextBytes(SensorInfo.getSensorInfoLength()), order));
+        }
         return true;
     }
 

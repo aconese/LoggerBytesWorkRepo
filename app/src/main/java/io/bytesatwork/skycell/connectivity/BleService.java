@@ -365,7 +365,10 @@ public class BleService extends Service {
                             sensor.mState.getRssi()
                         );
                         sensor.completeState();
-                        broadcastUpdate(ACTION_SKYCELL_STATE, sensor.getAddress());
+                        if(value.length > len) {
+                            // handle the rest of the data
+                            handleState( sensor, 0, Arrays.copyOfRange(value, len, value.length));
+                        }
                     } else {
                         Log.e(TAG + ":" + Utils.getLineNumber(), "Could not parse State");
                     }
@@ -373,6 +376,29 @@ public class BleService extends Service {
                 } else {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
                         sensor.mStateBuffer.remaining() + " bytes remaining");
+                }
+            } catch (BufferOverflowException e) {
+                Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received for State");
+            }
+        } else if (sensor != null && !sensor.areInfosCompleted()) {
+            try {
+                int len = value.length <= sensor.mSensorInfoBuffer.remaining() ?
+                        value.length : sensor.mSensorInfoBuffer.remaining();
+                Log.d(TAG + ":" + Utils.getLineNumber(), "SensorInfo: " + offset + " len: " + len);
+                sensor.mSensorInfoBuffer.put(Arrays.copyOfRange(value, 0, len));
+                if (sensor.mSensorInfoBuffer.remaining() == 0) {
+                    if (sensor.parseInfos()) {
+                        Log.d(TAG + ":" + Utils.getLineNumber(), "SensorInfos: complete");
+
+                        sensor.completeInfos();
+                        broadcastUpdate(ACTION_SKYCELL_STATE, sensor.getAddress());
+                    } else {
+                        Log.e(TAG + ":" + Utils.getLineNumber(), "Could not parse Infos");
+                    }
+                    sensor.mSensorInfoBuffer.clear();
+                } else {
+                    Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
+                            sensor.mSensorInfoBuffer.remaining() + " bytes remaining");
                 }
             } catch (BufferOverflowException e) {
                 Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received for State");
@@ -839,6 +865,7 @@ public class BleService extends Service {
             cmd.putShort(sensor.getReadPosition());
 
             sensor.clearState();
+            sensor.clearInfos();
             return sendCMD(addr, cmd.array());
         }
         return false;

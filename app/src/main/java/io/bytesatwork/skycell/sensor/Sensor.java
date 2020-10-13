@@ -17,6 +17,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.nio.ByteOrder;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,6 +35,8 @@ public class Sensor {
     public SynchronizedByteBuffer mStateBuffer;
     public SensorState mState;
     private boolean mStateComplete;
+    public SynchronizedByteBuffer mSensorInfoBuffer;
+    private boolean mInfosComplete;
     //data
     public SynchronizedByteBuffer mDataBuffer;
     private List<SensorMeasurement> mData;
@@ -47,8 +50,10 @@ public class Sensor {
         this.app = null;
         this.mAddress = "";
         this.mStateBuffer = null;
+        this.mSensorInfoBuffer = null;
         this.mState = null;
         this.mStateComplete = false;
+        this.mInfosComplete = false;
         this.mDataBuffer = null;
         this.mData = null;
         this.mDataComplete = false;
@@ -91,17 +96,42 @@ public class Sensor {
         return false;
     }
 
+    public boolean parseInfos() {
+        if (mSensorInfoBuffer.remaining() == 0) {
+            if (mState.parseSensorInfos(mSensorInfoBuffer.array(), ByteOrder.LITTLE_ENDIAN)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void completeState() {
         mStateComplete = true;
+        mSensorInfoBuffer = new SynchronizedByteBuffer(
+                mState.getSensorInfosLength());
     }
 
     public boolean isStateCompleted() {
         return mStateComplete;
     }
 
+    public void completeInfos() {
+        mInfosComplete = true;
+    }
+
+    public boolean areInfosCompleted() {
+        return mInfosComplete;
+    }
+
     public boolean clearState() {
         mStateBuffer.clear();
         mStateComplete = false;
+        return true;
+    }
+
+    public boolean clearInfos() {
+        mSensorInfoBuffer.clear();
+        mInfosComplete = false;
         return true;
     }
 
