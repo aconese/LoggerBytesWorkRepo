@@ -207,64 +207,75 @@ public class Sensor {
     public String convertToJSONString() {
         JSONObject object = new JSONObject();
         try {
-            JSONObject sensor = new JSONObject();
-            sensor.put("containerId", mState.getContainerId());
-            sensor.put("deviceId", mState.getDeviceId());
-            sensor.put("softwareVersion", mState.getSoftwareVersion());
-            sensor.put("hardwareVersion", mState.getHardwareVersion());
-            sensor.put("currentIntervalSec", mState.getInterval());
-            sensor.put("batteryState", mState.getBattery());
-            sensor.put("numSensors", mState.getNumSensors());
-            object.put("sensorDevice", sensor);
             JSONObject readout = new JSONObject();
-            readout.put("timestampUTC", getUTCReadoutString());
-            JSONObject gateway = new JSONObject();
-            gateway.put("id", "1234"); //TODO: Define unique id
-            gateway.put("type", BuildConfig.FLAVOR);
-            gateway.put("softwareVersion", "v" + BuildConfig.VERSION_NAME);
-            JSONObject position = new JSONObject(); //TODO: Get gps position
-            position.put("latitude", new Double(47.4951597));
-            position.put("longitude", new Double(8.7156737));
-            position.put("altitude", new Double(446));
-            gateway.put("position", position);
-            readout.put("gateway", gateway);
-            JSONArray extrema = new JSONArray();
-            synchronized (mExtrema) {
-                for (SensorExtrema sensorExtrema : mExtrema) {
-                    JSONObject minmax = new JSONObject();
-                    minmax.put("type", sensorExtrema.getType());
-                    minmax.put("timestampUTC", sensorExtrema.getUTCTimeStamp());
-                    minmax.put("periodStartTimestampUTC",
-                        sensorExtrema.getUTCPeriodStartTimeStamp());
-                    minmax.put("sensorId", sensorExtrema.getSensorId());
-                    minmax.put("value", sensorExtrema.getValue());
-                    minmax.put("binaryData", sensorExtrema.getBinaryData());
-                    minmax.put("signature", sensorExtrema.getSignature());
-                    extrema.put(minmax);
+            readout.put("containerSerialNumber", mState.getContainerId());
+            readout.put("loggerNumber", mState.getDeviceId());
+            readout.put("softwareVersion", mState.getSoftwareVersion());
+            readout.put("hardwareVersion", mState.getHardwareVersion());
+            readout.put("loggerTransmissionRateSeconds", mState.getInterval());
+            readout.put("batteryVoltage", mState.getBattery());
+            readout.put("sensorQuantity", mState.getNumSensors());
+            readout.put("readOutUtc", getUTCReadoutString());
+            readout.put("upTimeSeconds", 0); // TODO what is this?
+            readout.put("gatewayNumber", "1234"); // TODO get unique ID
+            readout.put("sensingFrequencyMilliseconds", 0); // TODO what is this?
+
+            JSONArray sensors = new JSONArray();
+            synchronized (mState.mSensorInfos) {
+                for (SensorInfo info : mState.mSensorInfos) {
+                    JSONObject sensor = new JSONObject();
+                    sensor.put("sensorNumber", info.getUUID());
+                    sensor.put("sensorType", info.getType());
+                    sensor.put("sensorPosition", info.getPosition());
+                    sensors.put(sensor);
                 }
+                readout.put("sensors", sensors);
             }
-            readout.put("extrema", extrema);
-            JSONArray data = new JSONArray();
+            object.put("readout", readout);
+
+            JSONObject loggerEvents = new JSONObject();
+            JSONArray extremas = new JSONArray(); // TODO
+            loggerEvents.put("extremas", extremas);
+
+            JSONArray doorEvents = new JSONArray(); // TODO
+            loggerEvents.put("doorEvents", doorEvents);
+
+            JSONArray accelerationEvents = new JSONArray(); // TODO
+            loggerEvents.put("accelerationEvents", accelerationEvents);
+
+            JSONArray measurements = new JSONArray();
             synchronized (mData) {
                 for (SensorMeasurement sensorMeasurement : mData) {
+                    JSONArray data = new JSONArray();
                     JSONObject measurement = new JSONObject();
-                    measurement.put("timestampUTC", sensorMeasurement.getUTCTimeStamp());
-                    JSONArray values = new JSONArray();
-                    for (String sensorMeasurementValue : sensorMeasurement.getValues()) {
-                        values.put(sensorMeasurementValue);
+                    measurement.put("timestamp", sensorMeasurement.getUTCTimeStamp());
+
+                    String[] values = sensorMeasurement.getValues();
+                    for (int i = 0; i < values.length; i++) {
+                        JSONObject sensorData = new JSONObject();
+                        sensorData.put("sensorNumber", mState.mSensorInfos.get(i).getUUID());
+                        sensorData.put("data", values[i]);
+                        data.put(sensorData);
                     }
-                    measurement.put("values", values);
-                    data.put(measurement);
+                    measurement.put("data", data);
+                    measurements.put(measurement);
                 }
             }
-            readout.put("data", data);
-            object.put("readout", readout);
+            loggerEvents.put("measurements", measurements);
+            object.put("loggerEvents", loggerEvents);
+
             //Log.i(TAG + ":" + Utils.getLineNumber(), "JSON:\n"+object.toString(4));
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-        return object.toString();
+        String json;
+        try {
+            json = object.toString(2);
+        } catch (JSONException e) {
+            json = object.toString();
+        }
+        return json;
     }
 
     public boolean writeToFile() {

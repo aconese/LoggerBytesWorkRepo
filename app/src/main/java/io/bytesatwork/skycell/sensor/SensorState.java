@@ -112,11 +112,12 @@ public class SensorState implements Serializable {
     }
 
     public int getBattery() {
-        return Utils.convertByteToUnsigned(mBattery);
+        final int DECI_VOLT_TO_MILLI = 100;
+        return Utils.convertByteToUnsigned(mBattery) * DECI_VOLT_TO_MILLI;
     }
 
     public String getBatteryString() {
-        return getBattery() + "%";
+        return getBattery() + "mV";
     }
 
     public int getNumSensors() {
