@@ -10,9 +10,11 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -125,15 +127,25 @@ public class CloudUploader {
                 Log.i(TAG + ":" + Utils.getLineNumber(), "Status: " + responseCode);
                 ok = (HttpURLConnection.HTTP_OK <= responseCode &&
                     responseCode <= HttpURLConnection.HTTP_RESET);
-
-                //read response
-                BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(
-                    new BufferedInputStream(connection.getInputStream())));
-                String line = "";
-                while ((line = responseStreamReader.readLine()) != null) {
-                    Log.i(TAG + ":" + Utils.getLineNumber(), line);
+                if (!ok) {
+                    //read error
+                    BufferedReader errorStreamReader = new BufferedReader(new InputStreamReader(
+                            new BufferedInputStream(connection.getErrorStream())));
+                    String line = "";
+                    while ((line = errorStreamReader.readLine()) != null) {
+                        Log.w(TAG + ":" + Utils.getLineNumber(), line);
+                    }
+                    errorStreamReader.close();
+                } else {
+                    //read response
+                    BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(
+                            new BufferedInputStream(connection.getInputStream())));
+                    String line = "";
+                    while ((line = responseStreamReader.readLine()) != null) {
+                        Log.i(TAG + ":" + Utils.getLineNumber(), line);
+                    }
+                    responseStreamReader.close();
                 }
-                responseStreamReader.close();
 
                 //disconnect
                 connection.disconnect();
