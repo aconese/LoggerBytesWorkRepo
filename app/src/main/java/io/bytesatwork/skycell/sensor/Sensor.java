@@ -250,8 +250,13 @@ public class Sensor {
                     JSONObject measurement = new JSONObject();
                     measurement.put("timestamp", sensorMeasurement.getUTCTimeStamp());
 
-                    String[] values = sensorMeasurement.getValues();
+                    float[] values = sensorMeasurement.getValues();
                     for (int i = 0; i < values.length; i++) {
+                        if (Float.isInfinite(values[i]) || Float.isNaN(values[i])) {
+                            // The value is not valid (probably an measurement error)
+                            // don't serialize it.
+                            continue;
+                        }
                         JSONObject sensorData = new JSONObject();
                         sensorData.put("sensorNumber", mState.mSensorInfos.get(i).getUUID());
                         sensorData.put("data", values[i]);

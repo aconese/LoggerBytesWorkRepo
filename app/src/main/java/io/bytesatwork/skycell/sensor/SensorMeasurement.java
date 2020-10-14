@@ -41,16 +41,16 @@ public class SensorMeasurement {
         return Utils.convertTimeStampToUTCString(timeStamp * 1000);
     }
 
-    public String[] getValues() {
-        String[] values = new String[mValues.length / SENSOR_MEASUREMENT_VALUE_LENGTH];
+    public float[] getValues() {
+        float[] values = new float[mValues.length / SENSOR_MEASUREMENT_VALUE_LENGTH];
         ByteBufferParser parser = new ByteBufferParser(mValues);
         for (int i = 0; i < values.length; ++i) {
             int v = Utils.convertBytesToShort(parser.getNextBytes(SENSOR_MEASUREMENT_VALUE_LENGTH),
                 0, SENSOR_MEASUREMENT_VALUE_LENGTH, ByteOrder.LITTLE_ENDIAN);
             if (v == SENSOR_MEASUREMENT_VALUE_ERROR) {
-                values[i] = SENSOR_MEASUREMENT_VALUE_ERROR_STRING; //return error
+                values[i] = Float.NEGATIVE_INFINITY; //return error
             } else {
-                values[i] = Float.toString((float) v / 10);
+                values[i] = (float) v / 10;
             }
         }
         return values;
