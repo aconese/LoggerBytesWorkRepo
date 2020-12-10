@@ -767,7 +767,8 @@ public class BleService extends Service {
         mSendQueue.clear();
     }
 
-    public synchronized boolean sendConfig(String addr, long timeStamp, short interval) {
+    public synchronized boolean sendConfig(String addr, long timeStamp, short interval,
+                                           short transmissionRateMultiple) {
         Sensor sensor = app.mSensorList.getSensorByAddress(addr);
         if (sensor != null) {
             ByteBuffer cmd = ByteBuffer.allocate(11);
@@ -775,6 +776,7 @@ public class BleService extends Service {
             cmd.put(Constants.CMD_CONFIG);
             cmd.putLong(timeStamp);
             cmd.putShort(interval);
+            cmd.putShort(transmissionRateMultiple);
 
             return sendCMD(addr, cmd.array());
         }
