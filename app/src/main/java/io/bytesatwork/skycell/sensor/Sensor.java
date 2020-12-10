@@ -208,17 +208,17 @@ public class Sensor {
         JSONObject object = new JSONObject();
         try {
             JSONObject readout = new JSONObject();
-            readout.put("containerSerialNumber", mState.getContainerId());
             readout.put("loggerNumber", mState.getDeviceId());
+            readout.put("readOutUtc", getUTCReadoutString());
             readout.put("softwareVersion", mState.getSoftwareVersion());
             readout.put("hardwareVersion", mState.getHardwareVersion());
-            readout.put("loggerTransmissionRateSeconds", mState.getInterval());
+            readout.put("loggerTransmissionRateMultiple", 1); //TODO: missing
+            readout.put("gatewayNumber", "1234"); // TODO get unique ID
+            readout.put("containerSerialNumber", mState.getContainerId());
+            readout.put("upTimeSeconds", 0); // TODO what is this?
             readout.put("batteryVoltage", mState.getBattery());
             readout.put("sensorQuantity", mState.getNumSensors());
-            readout.put("readOutUtc", getUTCReadoutString());
-            readout.put("upTimeSeconds", 0); // TODO what is this?
-            readout.put("gatewayNumber", "1234"); // TODO get unique ID
-            readout.put("sensingFrequencyMilliseconds", 0); // TODO what is this?
+            readout.put("sensingFrequencySeconds", mState.getInterval());
 
             JSONArray sensors = new JSONArray();
             synchronized (mState.mSensorInfos) {
