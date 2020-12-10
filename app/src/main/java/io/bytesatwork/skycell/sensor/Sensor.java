@@ -234,7 +234,22 @@ public class Sensor {
             object.put("readout", readout);
 
             JSONObject loggerEvents = new JSONObject();
-            JSONArray extremas = new JSONArray(); // TODO
+            JSONArray extremas = new JSONArray();
+            synchronized (mExtrema) {
+                for (SensorExtrema sensorExtrema : mExtrema) {
+                    JSONObject extrema = new JSONObject();
+                    extrema.put("periodStart", sensorExtrema.getUTCPeriodStartTimeStamp());
+                    extrema.put("periodEnd", sensorExtrema.getUTCPeriodEndTimeStamp());
+                    extrema.put("periodComment", ""); //TODO: missing
+                    extrema.put("timestamp", sensorExtrema.getUTCTimeStamp());
+                    extrema.put("sensorNumber", sensorExtrema.getUUID());
+                    extrema.put("type", sensorExtrema.getType());
+                    extrema.put("data", sensorExtrema.getValue());
+                    extrema.put("binaryData", sensorExtrema.getBinaryData());
+                    extrema.put("signature", sensorExtrema.getSignature());
+                    extremas.put(extrema);
+                }
+            }
             loggerEvents.put("extremas", extremas);
 
             JSONArray doorEvents = new JSONArray(); // TODO
