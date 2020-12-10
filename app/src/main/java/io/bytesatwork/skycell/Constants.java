@@ -52,7 +52,8 @@ public final class Constants {
     public static final byte CMD_GET_STATE = (byte) 0xC3;
     public static final byte CMD_READ_DATA = (byte) 0xC4;
     public static final byte CMD_READ_CURRENT_DATA = (byte) 0xC5;
-    public static final byte CMD_READ_EXTREMA = (byte) 0xC6;
+    public static final byte CMD_READ_CURRENT_EXTREMA = (byte) 0xC6;
+    public static final byte CMD_READ_EXTREMA = (byte) 0xC7;
     public static final byte CMD_CLEAR = (byte) 0xCC;
     public static final byte CMD_DISCONNECT = (byte) 0xCD;
     public static final byte CMD_DECOMMISSION = (byte) 0xCF;
