@@ -48,6 +48,14 @@ public class SensorSessionFSMContext
         return;
     }
 
+    public void completedEvent()
+    {
+        _transition = "completedEvent";
+        getState().completedEvent(this);
+        _transition = "";
+        return;
+    }
+
     public void completedExtrema()
     {
         _transition = "completedExtrema";
@@ -92,6 +100,14 @@ public class SensorSessionFSMContext
     {
         _transition = "receiveDataPackage";
         getState().receiveDataPackage(this);
+        _transition = "";
+        return;
+    }
+
+    public void receiveEventPackage()
+    {
+        _transition = "receiveEventPackage";
+        getState().receiveEventPackage(this);
         _transition = "";
         return;
     }
@@ -194,6 +210,11 @@ public class SensorSessionFSMContext
             Default(context);
         }
 
+        protected void completedEvent(SensorSessionFSMContext context)
+        {
+            Default(context);
+        }
+
         protected void completedExtrema(SensorSessionFSMContext context)
         {
             Default(context);
@@ -220,6 +241,11 @@ public class SensorSessionFSMContext
         }
 
         protected void receiveDataPackage(SensorSessionFSMContext context)
+        {
+            Default(context);
+        }
+
+        protected void receiveEventPackage(SensorSessionFSMContext context)
         {
             Default(context);
         }
@@ -298,6 +324,10 @@ public class SensorSessionFSMContext
             new SensorSessionFSMMap_WaitData("SensorSessionFSMMap.WaitData", 10);
         public static final SensorSessionFSMMap_WaitExtrema WaitExtrema =
             new SensorSessionFSMMap_WaitExtrema("SensorSessionFSMMap.WaitExtrema", 11);
+        public static final SensorSessionFSMMap_WaitEvent WaitEvent =
+            new SensorSessionFSMMap_WaitEvent("SensorSessionFSMMap.WaitEvent", 12);
+        public static final SensorSessionFSMMap_EventTransfer EventTransfer =
+            new SensorSessionFSMMap_EventTransfer("SensorSessionFSMMap.EventTransfer", 13);
     }
 
     protected static class SensorSessionFSMMap_Default
@@ -879,7 +909,7 @@ public class SensorSessionFSMContext
         {
 
             (context.getState()).exit(context);
-            context.setState(SensorSessionFSMMap.WaitData);
+            context.setState(SensorSessionFSMMap.WaitEvent);
             (context.getState()).entry(context);
             return;
         }
@@ -1037,7 +1067,7 @@ public class SensorSessionFSMContext
         {
 
             (context.getState()).exit(context);
-            context.setState(SensorSessionFSMMap.WaitData);
+            context.setState(SensorSessionFSMMap.WaitEvent);
             (context.getState()).entry(context);
             return;
         }
@@ -1058,6 +1088,164 @@ public class SensorSessionFSMContext
 
             (context.getState()).exit(context);
             context.setState(SensorSessionFSMMap.ExtremaTransfer);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void timeout(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.WaitDisconnect);
+            (context.getState()).entry(context);
+            return;
+        }
+
+    //-------------------------------------------------------
+    // Member data.
+    //
+
+        //---------------------------------------------------
+        // Constants.
+        //
+
+        private static final long serialVersionUID = 1L;
+    }
+
+    private static final class SensorSessionFSMMap_WaitEvent
+        extends SensorSessionFSMMap_Default
+    {
+    //-------------------------------------------------------
+    // Member methods.
+    //
+
+        private SensorSessionFSMMap_WaitEvent(String name, int id)
+        {
+            super (name, id);
+        }
+
+        @Override
+        protected void entry(SensorSessionFSMContext context)
+            {
+                SensorSessionFSM ctxt = context.getOwner();
+
+            ctxt.sendEventRequest();
+            return;
+        }
+
+        @Override
+        protected void Default(SensorSessionFSMContext context)
+        {
+
+            return;
+        }
+
+        @Override
+        protected void completedEvent(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.WaitData);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void disconnected(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.Disconnected);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void receiveEventPackage(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.EventTransfer);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void timeout(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.WaitDisconnect);
+            (context.getState()).entry(context);
+            return;
+        }
+
+    //-------------------------------------------------------
+    // Member data.
+    //
+
+        //---------------------------------------------------
+        // Constants.
+        //
+
+        private static final long serialVersionUID = 1L;
+    }
+
+    private static final class SensorSessionFSMMap_EventTransfer
+        extends SensorSessionFSMMap_Default
+    {
+    //-------------------------------------------------------
+    // Member methods.
+    //
+
+        private SensorSessionFSMMap_EventTransfer(String name, int id)
+        {
+            super (name, id);
+        }
+
+        @Override
+        protected void entry(SensorSessionFSMContext context)
+            {
+                SensorSessionFSM ctxt = context.getOwner();
+
+            ctxt.resetTimeout();
+            return;
+        }
+
+        @Override
+        protected void Default(SensorSessionFSMContext context)
+        {
+
+            return;
+        }
+
+        @Override
+        protected void completedEvent(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.WaitData);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void disconnected(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.Disconnected);
+            (context.getState()).entry(context);
+            return;
+        }
+
+        @Override
+        protected void receiveEventPackage(SensorSessionFSMContext context)
+        {
+
+            (context.getState()).exit(context);
+            context.setState(SensorSessionFSMMap.EventTransfer);
             (context.getState()).entry(context);
             return;
         }

@@ -141,6 +141,16 @@ public class SkyCellService extends Service {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "ACTION_SKYCELL_EXTREMA_ALL");
                     if (sensor != null) {
                         sensor.mSensorSessionFSM.signalExtremaComplete();
+                    }
+                } else if (BleService.ACTION_SKYCELL_EVENT.equals(action)) {
+                    Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_EVENT");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalEvent();
+                    }
+                } else if (BleService.ACTION_SKYCELL_EVENT_ALL.equals(action)) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "ACTION_SKYCELL_EVENT_ALL");
+                    if (sensor != null) {
+                        sensor.mSensorSessionFSM.signalEventComplete();
                         startTime = System.currentTimeMillis();
                     }
                 }
@@ -159,6 +169,8 @@ public class SkyCellService extends Service {
         intentFilter.addAction(BleService.ACTION_SKYCELL_DATA_ALL);
         intentFilter.addAction(BleService.ACTION_SKYCELL_EXTREMA);
         intentFilter.addAction(BleService.ACTION_SKYCELL_EXTREMA_ALL);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_EVENT);
+        intentFilter.addAction(BleService.ACTION_SKYCELL_EVENT_ALL);
         intentFilter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
         intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
         return intentFilter;

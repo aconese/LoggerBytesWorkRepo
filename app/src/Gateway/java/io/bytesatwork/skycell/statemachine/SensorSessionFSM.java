@@ -28,6 +28,8 @@ public class SensorSessionFSM {
     public void signalDataComplete() { mSensorSessionFSMContext.completedData(); }
     public void signalExtrema() { mSensorSessionFSMContext.receiveExtremaPackage(); }
     public void signalExtremaComplete() { mSensorSessionFSMContext.completedExtrema(); }
+    public void signalEvent() { mSensorSessionFSMContext.receiveEventPackage(); }
+    public void signalEventComplete() { mSensorSessionFSMContext.completedEvent(); }
 
     /* Entry actions */
     public void checkConnection() {
@@ -46,6 +48,10 @@ public class SensorSessionFSM {
 
     public void sendExtremaRequest() {
         mSensor.mBleService.sendReadExtrema(mSensor.getAddress());
+    }
+
+    public void sendEventRequest() {
+        mSensor.mBleService.sendReadEvent(mSensor.getAddress());
     }
 
     public void sendDataRequest() {

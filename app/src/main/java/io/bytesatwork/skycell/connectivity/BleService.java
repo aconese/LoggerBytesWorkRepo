@@ -79,6 +79,10 @@ public class BleService extends Service {
         "io.bytesatwork.skycell.ACTION_SKYCELL_EXTREMA";
     public static final String ACTION_SKYCELL_EXTREMA_ALL =
         "io.bytesatwork.skycell.ACTION_SKYCELL_EXTREMA_ALL";
+    public static final String ACTION_SKYCELL_EVENT =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_EVENT";
+    public static final String ACTION_SKYCELL_EVENT_ALL =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_EVENT_ALL";
 
     //Intent Extra
     public static final String DEVICE_ADDRESS_SKYCELL =
@@ -198,6 +202,13 @@ public class BleService extends Service {
                     }
 
                     handleExtrema(sensor, offset, value);
+                } else if (Constants.SKYCELL_CHAR_EVENT_UUID.equals(characteristic.getUuid())) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Got Event");
+                    if (responseNeeded) {
+                        mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, Constants.EMPTY_BYTES);
+                    }
+
+                    handleEvent(sensor, offset, value);
                 } else {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "Unknown Char");
                     if (responseNeeded) {
@@ -486,6 +497,46 @@ public class BleService extends Service {
         }
     }
 
+    private synchronized void handleEvent(Sensor sensor, final int offset, final byte[] value) {
+        if (sensor != null && !sensor.isEventCompleted() && sensor.mEventBuffer != null) {
+            if (value.length == 0) {
+                Log.d(TAG + ":" + Utils.getLineNumber(), "All Event packages received");
+                sensor.completeEvent();
+                broadcastUpdate(ACTION_SKYCELL_EVENT_ALL, sensor.getAddress());
+            } else {
+                try {
+                    int parsed = 0;
+                    while (parsed < value.length) {
+                        int parse_len = value.length <= sensor.mEventBuffer.remaining() ?
+                            value.length : sensor.mEventBuffer.remaining();
+                        Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
+                            offset + " parsed: " + parsed + " parse_len: " + parse_len);
+                        sensor.mEventBuffer.put(Arrays.copyOfRange(value, parsed,
+                            parsed + parse_len));
+                        if (sensor.mEventBuffer.remaining() == 0) {
+                            Log.d(TAG + ":" + Utils.getLineNumber(), "Event package complete");
+
+                            if (sensor.parseEvent()) {
+                                Log.d(TAG + ":" + Utils.getLineNumber(),
+                                    "Wait for more Event packages");
+                                broadcastUpdate(ACTION_SKYCELL_EVENT, sensor.getAddress());
+                            }
+                            sensor.mEventBuffer.clear();
+                        } else {
+                            Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
+                                sensor.mEventBuffer.remaining() + " bytes remaining");
+                        }
+
+                        parsed = parsed + parse_len;
+                    }
+                } catch (BufferOverflowException e) {
+                    Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received " +
+                        "in the Event package");
+                }
+            }
+        }
+    }
+
     public class LocalBinder extends Binder {
         public BleService getService() {
             return BleService.this;
@@ -586,7 +637,7 @@ public class BleService extends Service {
     }
 
     private synchronized BluetoothGattService setupSkyCellService() {
-        final BluetoothGattService service = new BluetoothGattService(Constants.SKYCELL_SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        final BluetoothGattService SERVICE = new BluetoothGattService(Constants.SKYCELL_SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         // Battery Level
         mGattCharCmd = new BluetoothGattCharacteristic(
@@ -594,34 +645,39 @@ public class BleService extends Service {
             BluetoothGattCharacteristic.PROPERTY_INDICATE | BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattDescriptor desc_ccc = new BluetoothGattDescriptor(
+        final BluetoothGattDescriptor DESC_CCC = new BluetoothGattDescriptor(
             Constants.SKYCELL_DESC_CCC_UUID,
             BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-        desc_ccc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-        mGattCharCmd.addDescriptor(desc_ccc);
+        DESC_CCC.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        mGattCharCmd.addDescriptor(DESC_CCC);
 
-        final BluetoothGattCharacteristic char_state = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_STATE = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_STATE_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattCharacteristic char_data = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_DATA = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_DATA_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattCharacteristic char_extrema = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_EXTREMA = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_EXTREMA_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
+        final BluetoothGattCharacteristic CHAR_EVENT = new BluetoothGattCharacteristic(
+            Constants.SKYCELL_CHAR_EVENT_UUID,
+            BluetoothGattCharacteristic.PROPERTY_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        service.addCharacteristic(mGattCharCmd);
-        service.addCharacteristic(char_state);
-        service.addCharacteristic(char_data);
-        service.addCharacteristic(char_extrema);
+        SERVICE.addCharacteristic(mGattCharCmd);
+        SERVICE.addCharacteristic(CHAR_STATE);
+        SERVICE.addCharacteristic(CHAR_DATA);
+        SERVICE.addCharacteristic(CHAR_EXTREMA);
+        SERVICE.addCharacteristic(CHAR_EVENT);
 
-        return service;
+        return SERVICE;
     }
 
     public synchronized void scan(final boolean enable, String uuid) {
@@ -853,6 +909,19 @@ public class BleService extends Service {
             cmd.put(Constants.CMD_READ_EXTREMA);
 
             sensor.clearExtrema();
+            return sendCMD(addr, cmd.array());
+        }
+        return false;
+    }
+
+    public synchronized boolean sendReadEvent(String addr) {
+        Sensor sensor = app.mSensorList.getSensorByAddress(addr);
+        if (sensor != null) {
+            ByteBuffer cmd = ByteBuffer.allocate(1);
+            cmd.order(ByteOrder.LITTLE_ENDIAN);
+            cmd.put(Constants.CMD_READ_EVENT);
+
+            sensor.clearEvent();
             return sendCMD(addr, cmd.array());
         }
         return false;
