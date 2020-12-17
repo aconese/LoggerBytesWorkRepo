@@ -45,6 +45,10 @@ public class Sensor {
     public SynchronizedByteBuffer mExtremaBuffer;
     private List<SensorExtrema> mExtrema;
     private boolean mExtremaComplete;
+    //event
+    public SynchronizedByteBuffer mEventBuffer;
+    private List<SensorEvent> mEvent;
+    private boolean mEventComplete;
 
     private Sensor() {
         this.app = null;
@@ -60,6 +64,9 @@ public class Sensor {
         this.mExtremaBuffer = null;
         this.mExtrema = null;
         this.mExtremaComplete = false;
+        this.mEventBuffer = null;
+        this.mEvent = null;
+        this.mEventComplete = false;
         this.mSensorSessionFSM = null;
     }
 
@@ -75,6 +82,9 @@ public class Sensor {
         this.mExtremaBuffer = new SynchronizedByteBuffer(SensorExtrema.getSensorExtremaLength());
         this.mExtrema = Collections.synchronizedList(new ArrayList<SensorExtrema>());
         this.mExtremaComplete = false;
+        this.mEventBuffer = new SynchronizedByteBuffer(SensorEvent.getSensorEventLength());
+        this.mEvent = Collections.synchronizedList(new ArrayList<SensorEvent>());
+        this.mEventComplete = false;
         if (Utils.isGateway()) {
             this.mSensorSessionFSM = new SensorSessionFSM(this);
             this.mBleService = bleService;
@@ -192,6 +202,30 @@ public class Sensor {
         return true;
     }
 
+    public boolean parseEvent() {
+        if (mEventBuffer.remaining() == 0) {
+            SensorEvent sensorEvent = new SensorEvent(mEventBuffer.array());
+            return mEvent.add(sensorEvent);
+        }
+
+        return false;
+    }
+
+    public void completeEvent() {
+        mEventComplete = true;
+    }
+
+    public boolean isEventCompleted() {
+        return mEventComplete;
+    }
+
+    public boolean clearEvent() {
+        mEventBuffer.clear();
+        mEvent.clear();
+        mEventComplete = false;
+        return true;
+    }
+
     public String getDeviceId() {
         return mState.getDeviceId();
     }
@@ -252,7 +286,17 @@ public class Sensor {
             }
             loggerEvents.put("extremas", extremas);
 
-            JSONArray doorEvents = new JSONArray(); // TODO
+            JSONArray doorEvents = new JSONArray();
+            synchronized (mEvent) {
+                for (SensorEvent sensorEvent : mEvent) {
+                    if (sensorEvent.getType() == SensorEvent.SensorEventType.DOOR) {
+                        JSONObject event = new JSONObject();
+                        event.put("timestamp", sensorEvent.getUTCTimeStamp());
+                        event.put("data", sensorEvent.getValue());
+                        doorEvents.put(event);
+                    }
+                }
+            }
             loggerEvents.put("doorEvents", doorEvents);
 
             JSONArray accelerationEvents = new JSONArray(); // TODO

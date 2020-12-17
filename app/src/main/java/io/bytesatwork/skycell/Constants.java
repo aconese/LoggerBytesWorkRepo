@@ -37,6 +37,8 @@ public final class Constants {
     public static final UUID SKYCELL_CHAR_DATA_UUID = UUID.fromString(SKYCELL_CHAR_DATA);
     public static final String SKYCELL_CHAR_EXTREMA = "00001547-0000-1000-8000-00805f9b34fb";
     public static final UUID SKYCELL_CHAR_EXTREMA_UUID = UUID.fromString(SKYCELL_CHAR_EXTREMA);
+    public static final String SKYCELL_CHAR_EVENT = "00001548-0000-1000-8000-00805f9b34fb";
+    public static final UUID SKYCELL_CHAR_EVENT_UUID = UUID.fromString(SKYCELL_CHAR_EVENT);
 
     public static final String SKYCELL_DESC_CCC = "00002902-0000-1000-8000-00805f9b34fb";
     public static final UUID SKYCELL_DESC_CCC_UUID = UUID.fromString(SKYCELL_DESC_CCC);
@@ -54,6 +56,7 @@ public final class Constants {
     public static final byte CMD_READ_CURRENT_DATA = (byte) 0xC5;
     public static final byte CMD_READ_CURRENT_EXTREMA = (byte) 0xC6;
     public static final byte CMD_READ_EXTREMA = (byte) 0xC7;
+    public static final byte CMD_READ_EVENT = (byte) 0xC8;
     public static final byte CMD_CLEAR = (byte) 0xCC;
     public static final byte CMD_DISCONNECT = (byte) 0xCD;
     public static final byte CMD_DECOMMISSION = (byte) 0xCF;

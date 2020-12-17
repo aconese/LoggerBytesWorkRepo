@@ -9,15 +9,17 @@
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="87" code="0" xpos="177" linewidth="1">WaitConnected</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="1027" code="3" xpos="779" linewidth="1">Disconnected</state>
     <state pencolor="0" exit_actions="" radius="50" description="" finalstate="0" entry_actions="sendDisconnectRequest()" moore_outputs="" ypos="659" code="10" xpos="410" linewidth="1">WaitDisconnect</state>
-    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendStatusRequest()" moore_outputs="" ypos="114" code="5" xpos="1570" linewidth="1">WaitStatus</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendStatusRequest()" moore_outputs="" ypos="79" code="5" xpos="2334" linewidth="1">WaitStatus</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkStatus()" moore_outputs="" ypos="164" code="2" xpos="551" linewidth="1">Status</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="293" code="6" xpos="635" linewidth="1">DataTransfer</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="writeToFile()" moore_outputs="" ypos="252" code="7" xpos="278" linewidth="1">Completed</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetNetwork()" moore_outputs="" ypos="839" code="8" xpos="305" linewidth="1">NotResponding</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkConnection()" moore_outputs="" ypos="79" code="12" xpos="419" linewidth="1">Connected</state>
-    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="206" code="1" xpos="1259" linewidth="1">ExtremaTransfer</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="191" code="1" xpos="1219" linewidth="1">ExtremaTransfer</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendDataRequest()" moore_outputs="" ypos="383" code="4" xpos="817" linewidth="1">WaitData</state>
     <state pencolor="0" exit_actions="" radius="50" description="" finalstate="0" entry_actions="sendExtremaRequest()" moore_outputs="" ypos="211" code="11" xpos="962" linewidth="1">WaitExtrema</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="sendEventRequest()" moore_outputs="" ypos="231" code="9" xpos="1428" linewidth="1">WaitEvent</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="resetTimeout()" moore_outputs="" ypos="210" code="13" xpos="1688" linewidth="1">EventTransfer</state>
     <transition c1x="271.0087147374508" c2y="82.57873909527937" c1y="84.67701177016353" description="" straight="1" type="2" ypos="86.77528444504769" endx="379.0274066493293" xpos="216.9993687815116" endy="80.48046642039522" c2x="325.0180606933901">
       <from>0</from>
       <to>12</to>
@@ -36,19 +38,19 @@
       <inputs default="0" any="0" invert="0">timeout</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1299.610602877694" c2y="714.1802607256219" c1y="430.090130362811" description="" straight="1" type="2" ypos="146" endx="806.8318086330808" xpos="1546" endy="998.2703910884329" c2x="1053.221205755387">
+    <transition c1x="1812.818585651095" c2y="717.2826936718571" c1y="414.1413468359286" description="" straight="1" type="2" ypos="111" endx="818.4557569532858" xpos="2310" endy="1020.424040507786" c2x="1315.63717130219">
       <from>5</from>
       <to>3</to>
       <inputs default="0" any="0" invert="0">disconnected</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1216.71362017746" c2y="142.1979394319681" c1y="129.3088709240219" description="" straight="1" type="2" ypos="116.4198024160756" endx="589.9943402628747" xpos="1530.073260134752" endy="155.0870079399144" c2x="903.3539802201672">
+    <transition c1x="1726.046953510793" c2y="130.5312727653015" c1y="105.9755375906885" description="" straight="1" type="2" ypos="81.4198024160756" endx="589.9943402628747" xpos="2294.073260134752" endy="155.0870079399144" c2x="1158.020646886834">
       <from>5</from>
       <to>2</to>
       <inputs default="0" any="0" invert="0">completedStatus</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1175.16645166996" c2y="490.4120362778671" c1y="310.3007533617736" description="" straight="1" type="2" ypos="130.18947044568" endx="458.6540143745005" xpos="1533.422670317689" endy="670.5233191939607" c2x="816.91023302223">
+    <transition c1x="1681.615113545126" c2y="491.0631568152267" c1y="293.1263136304534" description="" straight="1" type="2" ypos="95.18947044568" endx="450" xpos="2297.422670317689" endy="689" c2x="1065.807556772563">
       <from>5</from>
       <to>10</to>
       <inputs default="0" any="0" invert="0">timeout</inputs>
@@ -114,7 +116,7 @@
       <inputs default="0" any="0" invert="0">done</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="816.5130140314557" c2y="95.00743658940327" c1y="87.00371829470163" description="" straight="1" type="2" ypos="79" endx="1531.539042094367" xpos="459" endy="103.0111548841049" c2x="1174.026028062911">
+    <transition c1x="1071.179680698122" c2y="71.67410325606994" c1y="75.33705162803496" description="" straight="1" type="2" ypos="79" endx="2295.539042094367" xpos="459" endy="68.0111548841049" c2x="1683.359361396244">
       <from>12</from>
       <to>5</to>
       <inputs default="0" any="0" invert="0">accepted</inputs>
@@ -132,27 +134,27 @@
       <inputs default="0" any="0" invert="0">disconnected</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1311.443311361646" c2y="218.3650685983282" c1y="98.06622820717563" description="" straight="1" type="2" ypos="175.7724366884073" endx="1298.498139151078" xpos="1285.197221536714" endy="199.6835925082301" c2x="1378.361237755641">
+    <transition c1x="1271.443311361646" c2y="203.3650685983282" c1y="83.06622820717563" description="" straight="1" type="2" ypos="160.7724366884073" endx="1258.498139151078" xpos="1245.197221536714" endy="184.6835925082301" c2x="1338.361237755641">
       <from>1</from>
       <to>1</to>
       <inputs default="0" any="0" invert="0">receiveExtremaPackage</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1094.410818465719" c2y="741.5662109380073" c1y="492.2177907414404" description="" straight="1" type="2" ypos="242.8693705448734" endx="796.2582198921602" xpos="1243.487117752499" endy="990.9146311345742" c2x="945.3345191789399">
+    <transition c1x="1067.744151799053" c2y="736.5662109380074" c1y="482.2177907414404" description="" straight="1" type="2" ypos="227.8693705448734" endx="796.2582198921602" xpos="1203.487117752499" endy="990.9146311345742" c2x="932.0011858456066">
       <from>1</from>
       <to>3</to>
       <inputs default="0" any="0" invert="0">disconnected</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="977.1733819899941" c2y="512.4285770324723" c1y="375.6629608218538" description="" straight="1" type="2" ypos="238.8973446112353" endx="459.029033784546" xpos="1236.245556092718" endy="649.1941932430908" c2x="718.1012078872701">
+    <transition c1x="950.5067153233274" c2y="507.4285770324722" c1y="365.6629608218539" description="" straight="1" type="2" ypos="223.8973446112353" endx="459.029033784546" xpos="1196.245556092718" endy="649.1941932430908" c2x="704.7678745539368">
       <from>1</from>
       <to>10</to>
       <inputs default="0" any="0" invert="0">timeout</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1100.15528389207" c2y="320.2843060168755" c1y="271.9277752061058" description="" straight="1" type="2" ypos="223.571244395336" endx="854.3338242481223" xpos="1223.066013714043" endy="368.6408368276452" c2x="977.2445540700959">
+    <transition c1x="1302.615089759504" c2y="208.2268441033882" c1y="205.4951390284446" description="" straight="1" type="2" ypos="202.7634339535009" endx="1393.382948580755" xpos="1257.231160348878" endy="210.9585491783318" c2x="1347.999019170129">
       <from>1</from>
-      <to>4</to>
+      <to>9</to>
       <inputs default="0" any="0" invert="0">completedExtrema</inputs>
       <outputs></outputs>
     </transition>
@@ -180,7 +182,7 @@
       <inputs default="0" any="0" invert="0">completedData</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1081.034647020825" c2y="204.36702740554" c1y="210.5787002166073" description="" straight="1" type="2" ypos="216.7903730276747" endx="1219.776772972363" xpos="1011.663584045056" endy="198.1553545944726" c2x="1150.405709996594">
+    <transition c1x="1067.701313687492" c2y="194.3670274055399" c1y="205.5787002166074" description="" straight="1" type="2" ypos="216.7903730276747" endx="1179.776772972363" xpos="1011.663584045056" endy="183.1553545944726" c2x="1123.739043329927">
       <from>11</from>
       <to>1</to>
       <inputs default="0" any="0" invert="0">receiveExtremaPackage</inputs>
@@ -198,10 +200,58 @@
       <inputs default="0" any="0" invert="0">disconnected</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="902.0105116451884" c2y="320.390097809266" c1y="284.8091807592259" description="" straight="1" type="2" ypos="249.2282637091858" endx="846.4861656080296" xpos="929.7726846637678" endy="355.9710148593061" c2x="874.248338626609">
+    <transition c1x="1123.497439801009" c2y="245.7870769727983" c1y="248.9738581342818" description="" straight="1" type="2" ypos="252.1606392957653" endx="1389.719023822661" xpos="990.386647790183" endy="242.6002958113148" c2x="1256.608231811835">
       <from>11</from>
-      <to>4</to>
+      <to>9</to>
       <inputs default="0" any="0" invert="0">completedExtrema</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1526.924333383853" c2y="212.3187883243852" c1y="216.0160676823616" description="" straight="1" type="2" ypos="219.713347040338" endx="1648.023760025857" xpos="1466.374620062851" endy="208.6215089664088" c2x="1587.474046704855">
+      <from>9</from>
+      <to>13</to>
+      <inputs default="0" any="0" invert="0">receiveEventPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1218.535819358381" c2y="333.2279557486925" c1y="296.5967364950359" description="" straight="1" type="2" ypos="259.9655172413793" endx="854.7798718682463" xpos="1400.413793103448" endy="369.8591750023491" c2x="1036.657845613314">
+      <from>9</from>
+      <to>4</to>
+      <inputs default="0" any="0" invert="0">completedEvent</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1223.868250848507" c2y="754.6361959460272" c1y="512.6426559866663" description="" straight="1" type="2" ypos="270.6491160273054" endx="805.0316549382387" xpos="1433.286548803641" endy="996.6297359053881" c2x="1014.449952893373">
+      <from>9</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1093.619904130277" c2y="531.214429326508" c1y="399.097377834774" description="" straight="1" type="2" ypos="266.9803263430399" endx="459.8120294097841" xpos="1410.523841490523" endy="663.3314808182421" c2x="776.7159667700306">
+      <from>9</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1678.177495287967" c2y="159.86517306357" c1y="90.40268229938397" description="" straight="1" type="2" ypos="170.6452035960036" endx="1718.778143345803" xpos="1695.155417527999" endy="184.4518906338415" c2x="1797.025222439829">
+      <from>13</from>
+      <to>13</to>
+      <inputs default="0" any="0" invert="0">receiveEventPackage</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1390.026198840046" c2y="349.1816261841806" c1y="293.7329487158212" description="" straight="1" type="2" ypos="238.2842712474619" endx="850.6471390150622" xpos="1659.715728752538" endy="404.63030365254" c2x="1120.336668927554">
+      <from>13</from>
+      <to>4</to>
+      <inputs default="0" any="0" invert="0">completedEvent</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1394.089404068264" c2y="754.2285111889378" c1y="502.0368525949765" description="" straight="1" type="2" ypos="249.8451940010152" endx="813.2997170285017" xpos="1684.484247588146" endy="1006.420169782899" c2x="1103.694560548383">
+      <from>13</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">disconnected</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="1264.630462413037" c2y="533.1961148677904" c1y="389.1096111144311" description="" straight="1" type="2" ypos="245.0231073610718" endx="456.5375746720173" xpos="1668.676906283547" endy="677.2826186211497" c2x="860.5840185425271">
+      <from>13</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">timeout</inputs>
       <outputs></outputs>
     </transition>
   </machine>

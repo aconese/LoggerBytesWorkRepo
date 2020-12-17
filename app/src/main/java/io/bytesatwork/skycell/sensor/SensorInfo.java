@@ -27,15 +27,14 @@ public class SensorInfo {
     public final SensorType type;
 
     private final static Map<Byte, String> POSITIONS =  new HashMap<Byte, String >(){{
-        put((byte) 0, "ONBOARD");
-        put((byte) 1, "BACKPLANE");
-        put((byte) 2, "TOP");
-        put((byte) 3, "BOTTOM");
-        put((byte) 4, "LEFT");
-        put((byte) 5, "RIGHT");
-        put((byte) 6, "BACK");
-        put((byte) 7, "INSIDE");
-        put((byte) 255, "UNKNOWN");
+        put((byte) 0, "AMBIENT");
+        put((byte) 1, "TOP");
+        put((byte) 2, "BOTTOM");
+        put((byte) 3, "LEFT");
+        put((byte) 4, "RIGHT");
+        put((byte) 5, "BACK");
+        put((byte) 6, "INTERNAL");
+        put((byte) 255, "NOT_APPLICABLE");
     }};
 
     private final static Map<Byte, SensorType> TYPEVALUES =  new HashMap<Byte, SensorType >(){{
