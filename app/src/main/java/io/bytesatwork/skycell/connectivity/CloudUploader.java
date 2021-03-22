@@ -93,7 +93,7 @@ public class CloudUploader {
                             }
                             buffreader.close();
                             if (json.length() > 0) {
-                                if (upload(json.toString(), files[i].getName())) {
+                                if (upload(json.toString())) {
                                     Log.i(TAG + ":" + Utils.getLineNumber(),
                                         "Upload ok - delete file");
                                     files[i].delete();
@@ -109,7 +109,7 @@ public class CloudUploader {
             }
         }
 
-        private boolean upload(String json, String fileName) {
+        private boolean upload(String json) {
             boolean ok = false;
             HttpURLConnection connection = null;
 
