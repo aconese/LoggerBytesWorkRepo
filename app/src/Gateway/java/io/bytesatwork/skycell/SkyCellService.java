@@ -246,6 +246,8 @@ public class SkyCellService extends Service {
                 //Create or load SharedPreferences
                 String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
                 String apikey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
+                //Create UUID if missing on init
+                String uuid = app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID);
                 long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
                 Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
                     " (Upload URL: " + url + ", Rate: " + rate + "secs)");

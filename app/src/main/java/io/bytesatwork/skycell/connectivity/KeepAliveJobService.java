@@ -85,7 +85,7 @@ public class KeepAliveJobService extends JobService {
 
         try {
             JSONObject request = new JSONObject();
-            request.put("gatewayUuid", "747dfbe2-8337-11eb-8dcd-0242ac130003");
+            request.put("gatewayUuid", app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID));
             request.put("gatewayConnected", Constants.GATEWAY_STATUS_ONLINE);
             request.put("longitude", mGPS.getPosition().getLongitude());
             request.put("latitude", mGPS.getPosition().getLatitude());

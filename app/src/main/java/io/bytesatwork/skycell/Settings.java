@@ -11,6 +11,8 @@ package io.bytesatwork.skycell;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import java.util.UUID;
+
 public class Settings {
     public static final String SHARED_PREFERENCES_URL_UPLOAD =
         "io.bytesatwork.skycell.SHARED_PREFERENCES_URL_UPLOAD";
@@ -20,6 +22,8 @@ public class Settings {
         "io.bytesatwork.skycell.SHARED_PREFERENCES_UPLOAD_RATE_SECS";
     public static final String SHARED_PREFERENCES_APIKEY =
          "io.bytesatwork.skycell.SHARED_PREFERENCES_APIKEY";
+    public static final String SHARED_PREFERENCES_UUID =
+        "io.bytesatwork.skycell.SHARED_PREFERENCES_UUID";
     private static final String SHARED_PREFERENCES = "io.bytesatwork.skycell.SHARED_PREFERENCES";
     private SharedPreferences mPreferences;
     private SkyCellApplication app;
@@ -42,6 +46,9 @@ public class Settings {
                 break;
             case SHARED_PREFERENCES_APIKEY:
                 setting = app.getString(R.string.default_pref_api_key);
+                break;
+            case SHARED_PREFERENCES_UUID:
+                setting = loadSettings(key, UUID.randomUUID().toString());
                 break;
             default:
                 break;
