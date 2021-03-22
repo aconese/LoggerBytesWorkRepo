@@ -34,10 +34,13 @@ public class KeepAliveJobService extends JobService {
 
     private SkyCellApplication app;
     private CloudConnection mConnection;
+    private GPS mGPS;
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         this.mConnection = new CloudConnection();
+        this.mGPS = new GPS();
+        mGPS.registerListener();
     }
 
     public void start() {
@@ -84,8 +87,8 @@ public class KeepAliveJobService extends JobService {
             JSONObject request = new JSONObject();
             request.put("gatewayUuid", "747dfbe2-8337-11eb-8dcd-0242ac130003");
             request.put("gatewayConnected", Constants.GATEWAY_STATUS_ONLINE);
-            request.put("longitude",  0.0); //TODO: get geolocation
-            request.put("latitude",0.0); //TODO: get geolocation
+            request.put("longitude", mGPS.getPosition().getLongitude());
+            request.put("latitude", mGPS.getPosition().getLatitude());
 
             String json = request.toString(2);
             Log.i(TAG + ":" + Utils.getLineNumber(), "Send KeepAlive: " + json);
