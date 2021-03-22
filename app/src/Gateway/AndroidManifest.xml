@@ -14,6 +14,7 @@
             </intent-filter>
         </activity>
         <service android:name=".SkyCellService" android:enabled="true" android:exported="false" />
+        <service android:name=".connectivity.KeepAliveJobService" android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

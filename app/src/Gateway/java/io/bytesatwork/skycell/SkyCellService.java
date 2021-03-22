@@ -32,6 +32,7 @@ import java.util.concurrent.Executors;
 
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.connectivity.CloudUploader;
+import io.bytesatwork.skycell.connectivity.KeepAliveJobService;
 import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
 
@@ -50,12 +51,14 @@ public class SkyCellService extends Service {
     private ExecutorService mExecutor;
     private long startTime = 0;
     private CloudUploader mCloudUploader;
+    private KeepAliveJobService mKeepAlive;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         this.mBinder = new LocalBinder();
         this.mExecutor = Executors.newSingleThreadExecutor();
         this.mCloudUploader = new CloudUploader();
+        this.mKeepAlive = new KeepAliveJobService();
     }
 
     public static boolean isRunning() {
@@ -241,7 +244,7 @@ public class SkyCellService extends Service {
                 //Create new SensorList
                 app.mSensorList = new SensorList();
                 //Create or load SharedPreferences
-                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
                 String apikey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
                 long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
                 Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
@@ -263,6 +266,7 @@ public class SkyCellService extends Service {
             }
 
             mCloudUploader.start();
+            mKeepAlive.start();
         }
 
         public boolean initializeLocation() {
@@ -324,6 +328,7 @@ public class SkyCellService extends Service {
         mBleService = null;
         mExecutor.shutdown();
         mCloudUploader.stop();
+        mKeepAlive.stop();
 
         super.onDestroy();
     }

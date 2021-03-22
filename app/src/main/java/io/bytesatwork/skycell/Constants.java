@@ -27,6 +27,10 @@ public final class Constants {
     public static final String FLAVOUR_GATEWAY = "Gateway";
     public static final String FLAVOUR_MOBILE = "Mobile";
 
+    //Gateway STATUS
+    public static final String GATEWAY_STATUS_OFFLINE = "OFFLINE";
+    public static final String GATEWAY_STATUS_ONLINE = "ONLINE";
+
     //BLE
     public static final String SKYCELL_DEVICE_NAME = "SkyCell";
     public static final int REQUEST_ENABLE_BT = 1;

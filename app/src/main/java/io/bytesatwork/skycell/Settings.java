@@ -12,8 +12,10 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 public class Settings {
-    public static final String SHARED_PREFERENCES_SERVER_URL =
-        "io.bytesatwork.skycell.SHARED_PREFERENCES_SERVER_URL";
+    public static final String SHARED_PREFERENCES_URL_UPLOAD =
+        "io.bytesatwork.skycell.SHARED_PREFERENCES_URL_UPLOAD";
+    public static final String SHARED_PREFERENCES_URL_KEEPALIVE =
+        "io.bytesatwork.skycell.SHARED_PREFERENCES_URL_KEEPALIVE";
     public static final String SHARED_PREFERENCES_UPLOAD_RATE_SECS =
         "io.bytesatwork.skycell.SHARED_PREFERENCES_UPLOAD_RATE_SECS";
     public static final String SHARED_PREFERENCES_APIKEY =
@@ -32,11 +34,15 @@ public class Settings {
         String setting = "";
 
         switch (key) {
-            case SHARED_PREFERENCES_SERVER_URL:
-                setting = app.getString(R.string.default_pref_server_url);
+            case SHARED_PREFERENCES_URL_UPLOAD:
+                setting = app.getString(R.string.default_pref_url_upload);
+                break;
+            case SHARED_PREFERENCES_URL_KEEPALIVE:
+                setting = app.getString(R.string.default_pref_url_keepalive);
                 break;
             case SHARED_PREFERENCES_APIKEY:
                 setting = app.getString(R.string.default_pref_api_key);
+                break;
             default:
                 break;
         }
