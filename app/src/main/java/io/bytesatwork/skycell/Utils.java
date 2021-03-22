@@ -20,9 +20,12 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.time.format.DateTimeFormatter;
 
 public final class Utils {
     private static final String TAG = Utils.class.getSimpleName();
@@ -115,6 +118,12 @@ public final class Utils {
         SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
         dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
         return dateFormat.format(cal.getTime());
+    }
+
+    public static long convertUTCStringToTimeStamp(String timeStamp) {
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(Constants.DATEFORMAT_UTC);
+        LocalDateTime localDate = LocalDateTime.parse(timeStamp, fmt);
+        return localDate.atOffset(ZoneOffset.UTC).toInstant().toEpochMilli();
     }
 
     public static String convertBytesToHexString(byte[] value) {
