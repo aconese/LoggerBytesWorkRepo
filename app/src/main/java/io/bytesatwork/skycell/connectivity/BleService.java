@@ -1062,8 +1062,6 @@ public class BleService extends Service {
         }
 
         private void consume(Bundle b) throws InterruptedException {
-            //long startTime = System.currentTimeMillis();
-
             while ((app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) != null) && mRequestPending) {
                 Thread.sleep(10);
             }

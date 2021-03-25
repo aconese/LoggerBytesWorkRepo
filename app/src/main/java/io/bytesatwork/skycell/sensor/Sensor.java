@@ -13,6 +13,7 @@ import android.util.Log;
 
 import io.bytesatwork.skycell.BuildConfig;
 import io.bytesatwork.skycell.Constants;
+import io.bytesatwork.skycell.CustomTime;
 import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.SynchronizedByteBuffer;
 import io.bytesatwork.skycell.Utils;
@@ -243,7 +244,7 @@ public class Sensor {
     }
 
     public String getUTCReadoutString() {
-        return Utils.convertTimeStampToUTCString(System.currentTimeMillis());
+        return Utils.convertTimeStampToUTCString(CustomTime.getInstance().currentTimeMillis());
     }
 
     public String convertToJSONString() {
@@ -351,7 +352,7 @@ public class Sensor {
     }
 
     public boolean writeToFile() {
-        String fileName = getAddress() + "_" + System.currentTimeMillis() + Constants.FILE_ENDING;
+        String fileName = getAddress() + "_" + CustomTime.getInstance().currentTimeMillis() + Constants.FILE_ENDING;
         String json = convertToJSONString();
         boolean ok = false;
 

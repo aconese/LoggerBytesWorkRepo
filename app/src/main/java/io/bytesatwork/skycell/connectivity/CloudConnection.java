@@ -25,6 +25,69 @@ public class CloudConnection {
     private static final String TAG = CloudConnection.class.getSimpleName();
 
     /**
+     * Do a get request with the given cloudUrl and returns a response json.
+     *
+     * @param cloudUrl The url of the cloud
+     * @param apiKey The apiKey to authenticate
+     * @return Return response String (json) if successful, otherwise null.
+     */
+    public String get(String cloudUrl, String apiKey) {
+        boolean ok = false;
+        StringBuilder stringBuilder = new StringBuilder();
+        HttpURLConnection connection = null;
+
+        try {
+            //header
+            Log.i(TAG + ":" + Utils.getLineNumber(), "Get: " + cloudUrl);
+            URL url = new URL(cloudUrl);
+            connection = (HttpsURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("APIKEY", apiKey);
+
+            //get status
+            int responseCode = connection.getResponseCode();
+            Log.i(TAG + ":" + Utils.getLineNumber(), "Status: " + responseCode);
+            ok = (HttpURLConnection.HTTP_OK <= responseCode &&
+                responseCode <= HttpURLConnection.HTTP_RESET);
+            BufferedReader streamReader;
+            String line = "";
+            if (ok) {
+                //read response
+                streamReader = new BufferedReader(new InputStreamReader(
+                    new BufferedInputStream(connection.getInputStream())));
+
+                while ((line = streamReader.readLine()) != null) {
+                    stringBuilder.append(line);
+                    Log.i(TAG + ":" + Utils.getLineNumber(), line);
+                }
+            } else {
+                //read error
+                streamReader = new BufferedReader(new InputStreamReader(
+                    new BufferedInputStream(connection.getErrorStream())));
+
+                while ((line = streamReader.readLine()) != null) {
+                    Log.w(TAG + ":" + Utils.getLineNumber(), line);
+                }
+            }
+            streamReader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            //disconnect
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+        if (ok) {
+            return stringBuilder.toString();
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * Posts the json to the given cloudUrl and returns a response json.
      *
      * @param json JSON-String to post
