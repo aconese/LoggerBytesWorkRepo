@@ -34,17 +34,23 @@ public class KeepAliveJobService extends JobService {
     private static final int MAX_RETRIES = 3;
 
     private SkyCellApplication app;
+    private KeepAliveTask mKeepAliveTask;
+    private Thread mThread;
     private CloudConnection mConnection;
     private GPS mGPS;
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
+        this.mKeepAliveTask = new KeepAliveTask();
+        this.mThread = new Thread(mKeepAliveTask);
         this.mConnection = new CloudConnection();
         this.mGPS = new GPS();
         mGPS.registerListener();
     }
 
     public void start() {
+        Log.i(TAG + ":" + Utils.getLineNumber(), "start()");
+
         JobScheduler jobScheduler = (JobScheduler)
             app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName =
@@ -54,10 +60,6 @@ public class KeepAliveJobService extends JobService {
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
         builder.setPeriodic(ONE_DAY_INTERVAL);
         jobScheduler.schedule(builder.build());
-
-        //Call once on startup
-        getTimeOfCloud();
-        sendKeepAlive();
     }
 
     public void stop() {
@@ -68,13 +70,10 @@ public class KeepAliveJobService extends JobService {
 
     @Override
     public boolean onStartJob(final JobParameters params) {
-        //run keepAlive (main thread)
-        for (int i = 0; i < MAX_RETRIES; ++i) {
-            if (getTimeOfCloud()) break;
-        }
-        for (int i = 0; i < MAX_RETRIES; ++i) {
-            if (sendKeepAlive()) break;
-        }
+        Log.i(TAG + ":" + Utils.getLineNumber(), "onStartJob()");
+
+        //run keepAlive
+        mThread.start();
 
         //job completed
         return false;
@@ -86,60 +85,73 @@ public class KeepAliveJobService extends JobService {
         return true;
     }
 
-    private boolean sendKeepAlive() {
-        boolean ok = false;
+    private class KeepAliveTask implements Runnable {
 
-        try {
-            JSONObject request = new JSONObject();
-            request.put("gatewayUuid", app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID));
-            request.put("gatewayConnected", Constants.GATEWAY_STATUS_ONLINE);
-            request.put("longitude", mGPS.getPosition().getLongitude());
-            request.put("latitude", mGPS.getPosition().getLatitude());
-
-            String json = request.toString(2);
-            Log.i(TAG + ":" + Utils.getLineNumber(), "Send KeepAlive: " + json);
-            String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_KEEPALIVE);
-            String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
-            String responseString = mConnection.post(json, url, apiKey);
-            if (responseString != null) {
-                ok = true;
+        public void run() {
+            for (int i = 0; i < MAX_RETRIES; ++i) {
+                if (getTimeOfCloud()) break;
             }
-        } catch (JSONException e) {
-            e.printStackTrace();
-            ok = false;
+            for (int i = 0; i < MAX_RETRIES; ++i) {
+                if (sendKeepAlive()) break;
+            }
         }
 
-        return ok;
-    }
 
-    private boolean getTimeOfCloud() {
-        boolean ok = false;
-        Log.i(TAG + ":" + Utils.getLineNumber(), "Get time of cloud");
+        private boolean sendKeepAlive() {
+            boolean ok = false;
 
-        String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_TIME);
-        String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
-        String responseString = mConnection.get(url, apiKey);
-        if (responseString != null) {
             try {
-                JSONObject response = new JSONObject(responseString);
-                //Convert timestamp and set time
-                if (response.has(RESPONSE_KEY_UTC_TIME)) {
-                    String utcTime = response.getString(RESPONSE_KEY_UTC_TIME);
-                    long timeStamp = Utils.convertUTCStringToTimeStamp(utcTime);
-                    Log.i(TAG + ":" + Utils.getLineNumber(),
-                        "timeStamp: " + utcTime + " -> " + timeStamp);
-                    //Set Time
-                    CustomTime.getInstance().setCurrentTimeMillis(timeStamp);
+                JSONObject request = new JSONObject();
+                request.put("gatewayUuid", app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID));
+                request.put("gatewayConnected", Constants.GATEWAY_STATUS_ONLINE);
+                request.put("longitude", mGPS.getPosition().getLongitude());
+                request.put("latitude", mGPS.getPosition().getLatitude());
+
+                String json = request.toString(2);
+                Log.i(TAG + ":" + Utils.getLineNumber(), "Send KeepAlive: " + json);
+                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_KEEPALIVE);
+                String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
+                String responseString = mConnection.post(json, url, apiKey);
+                if (responseString != null) {
                     ok = true;
-                } else {
-                    ok = false;
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
                 ok = false;
             }
+
+            return ok;
         }
 
-        return ok;
+        private boolean getTimeOfCloud() {
+            boolean ok = false;
+            Log.i(TAG + ":" + Utils.getLineNumber(), "Get time of cloud");
+
+            String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_TIME);
+            String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
+            String responseString = mConnection.get(url, apiKey);
+            if (responseString != null) {
+                try {
+                    JSONObject response = new JSONObject(responseString);
+                    //Convert timestamp and set time
+                    if (response.has(RESPONSE_KEY_UTC_TIME)) {
+                        String utcTime = response.getString(RESPONSE_KEY_UTC_TIME);
+                        long timeStamp = Utils.convertUTCStringToTimeStamp(utcTime);
+                        Log.i(TAG + ":" + Utils.getLineNumber(),
+                            "timeStamp: " + utcTime + " -> " + timeStamp);
+                        //Set Time
+                        CustomTime.getInstance().setCurrentTimeMillis(timeStamp);
+                        ok = true;
+                    } else {
+                        ok = false;
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    ok = false;
+                }
+            }
+
+            return ok;
+        }
     }
 }
