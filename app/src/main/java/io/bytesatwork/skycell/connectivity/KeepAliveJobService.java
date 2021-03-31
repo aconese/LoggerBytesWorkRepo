@@ -24,6 +24,7 @@ import io.bytesatwork.skycell.Settings;
 import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.CustomTime;
 import io.bytesatwork.skycell.Utils;
+import io.bytesatwork.skycell.BuildConfig;
 
 public class KeepAliveJobService extends JobService {
     private static final String TAG = KeepAliveJobService.class.getSimpleName();
@@ -106,6 +107,7 @@ public class KeepAliveJobService extends JobService {
                 request.put("gatewayConnected", Constants.GATEWAY_STATUS_ONLINE);
                 request.put("longitude", mGPS.getPosition().getLongitude());
                 request.put("latitude", mGPS.getPosition().getLatitude());
+                request.put("softwareVersion", "v" + BuildConfig.VERSION_NAME + "-gateway");
 
                 String json = request.toString(2);
                 Log.i(TAG + ":" + Utils.getLineNumber(), "Send KeepAlive: " + json);
