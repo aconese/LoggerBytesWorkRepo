@@ -8,29 +8,25 @@
 
 package io.bytesatwork.skycell;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
-
 public class CustomTime {
     private static final String TAG = CustomTime.class.getSimpleName();
 
     private static final CustomTime mTime = new CustomTime();
-    private Duration mDuration;
+    private long mTimeDiffMillis;
 
     public static CustomTime getInstance() {
         return mTime;
     }
 
     private CustomTime() {
-        this.mDuration = Duration.ZERO;
+        this.mTimeDiffMillis = 0;
     }
 
     public long currentTimeMillis() {
-        return Clock.offset(Clock.systemUTC(), mDuration).millis();
+        return System.currentTimeMillis() + mTimeDiffMillis;
     }
 
     public void setCurrentTimeMillis(long timeStamp) {
-        mDuration = Duration.between(Instant.now(), Instant.ofEpochMilli(timeStamp));
+        mTimeDiffMillis = timeStamp - System.currentTimeMillis();
     }
 }
