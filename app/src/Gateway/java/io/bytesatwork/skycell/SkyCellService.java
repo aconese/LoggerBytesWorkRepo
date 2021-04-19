@@ -201,13 +201,6 @@ public class SkyCellService extends Service {
 
             if (mBluetoothAdapter.isEnabled()) {
                 mBleService.advertise(true); //Start permanent advertising
-                if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "permission granted");
-                    mBleService.scan(true, Constants.SKYCELL_SERVICE);
-                } else {
-                    Log.d(TAG, "no permission");
-                }
             }
         }
 
