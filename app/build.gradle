@@ -14,8 +14,8 @@ android {
         applicationId "io.bytesatwork.skycell"
         minSdkVersion 24
         targetSdkVersion 28
-        versionCode 7
-        versionName "1.0.7"
+        versionCode 8
+        versionName "1.0.8"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         signingConfig signingConfigs.config
     }
