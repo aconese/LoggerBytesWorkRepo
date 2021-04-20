@@ -35,9 +35,6 @@ public class GPS {
         @Override
         public void onLocationChanged(Location loc) {
             mLocation = loc;
-            Log.d(TAG+":"+ Utils.getLineNumber(),
-                "Location changed: " + loc.getLongitude() + " " + loc.getLatitude());
-
         }
 
         @Override
