@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -121,9 +122,16 @@ public final class Utils {
     }
 
     public static long convertUTCStringToTimeStamp(String timeStamp) {
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(Constants.DATEFORMAT_UTC);
-        LocalDateTime localDate = LocalDateTime.parse(timeStamp, fmt);
-        return localDate.atOffset(ZoneOffset.UTC).toInstant().toEpochMilli();
+        SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
+        dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
+        long ts = 0;
+        try {
+            ts = dateFormat.parse(timeStamp).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return ts;
     }
 
     public static String convertBytesToHexString(byte[] value) {
