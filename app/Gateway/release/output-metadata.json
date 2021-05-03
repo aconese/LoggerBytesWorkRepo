@@ -10,8 +10,8 @@
     {
       "type": "SINGLE",
       "filters": [],
-      "versionCode": 5,
-      "versionName": "1.0.5-gateway",
+      "versionCode": 9,
+      "versionName": "1.0.9-gateway",
       "outputFile": "app-Gateway-release.apk"
     }
   ]
