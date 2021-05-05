@@ -9,6 +9,7 @@
 package io.bytesatwork.skycell.sensor;
 
 import android.os.Environment;
+import android.os.SystemClock;
 import android.util.Log;
 
 import io.bytesatwork.skycell.BuildConfig;
@@ -31,6 +32,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Sensor {
     private static final String TAG = Sensor.class.getSimpleName();
@@ -258,7 +260,8 @@ public class Sensor {
             readout.put("loggerTransmissionRateMultiple", 1); //TODO: missing
             readout.put("gatewayNumber", "1234"); // TODO get unique ID
             readout.put("containerSerialNumber", mState.getContainerId());
-            readout.put("upTimeSeconds", 0); // TODO what is this?
+            readout.put("upTimeSeconds",
+                TimeUnit.MILLISECONDS.toSeconds(SystemClock.elapsedRealtime()));
             readout.put("batteryVoltage", mState.getBattery());
             readout.put("sensorQuantity", mState.getNumSensors());
             readout.put("sensingFrequencySeconds", mState.getInterval());
