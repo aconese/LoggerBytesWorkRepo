@@ -15,6 +15,7 @@ import android.util.Log;
 import io.bytesatwork.skycell.BuildConfig;
 import io.bytesatwork.skycell.Constants;
 import io.bytesatwork.skycell.CustomTime;
+import io.bytesatwork.skycell.Settings;
 import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.SynchronizedByteBuffer;
 import io.bytesatwork.skycell.Utils;
@@ -258,7 +259,8 @@ public class Sensor {
             readout.put("softwareVersion", mState.getSoftwareVersion());
             readout.put("hardwareVersion", mState.getHardwareVersion());
             readout.put("loggerTransmissionRateMultiple", 1); //TODO: missing
-            readout.put("gatewayNumber", "1234"); // TODO get unique ID
+            readout.put("gatewayNumber",
+                app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID));
             readout.put("containerSerialNumber", mState.getContainerId());
             readout.put("upTimeSeconds",
                 TimeUnit.MILLISECONDS.toSeconds(SystemClock.elapsedRealtime()));
