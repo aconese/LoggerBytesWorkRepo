@@ -31,7 +31,7 @@ public class KeepAliveJobService extends JobService {
 
     private static final String RESPONSE_KEY_UTC_TIME = "utcTime";
     private static final int JOB_ID = 42;
-    private static final long ONE_DAY_INTERVAL = 24 * 60 * 60 * 1000L; // 1 Day
+    private static final long KEEPALIVE_INTERVAL = 30 * 60 * 1000L; // 30min
     private static final int MAX_RETRIES = 3;
 
     private SkyCellApplication app;
@@ -59,7 +59,7 @@ public class KeepAliveJobService extends JobService {
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, componentName);
         builder.setPersisted(false); //Don't persist across device reboots
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
-        builder.setPeriodic(ONE_DAY_INTERVAL);
+        builder.setPeriodic(KEEPALIVE_INTERVAL);
         jobScheduler.schedule(builder.build());
     }
 
