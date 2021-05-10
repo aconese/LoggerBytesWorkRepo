@@ -5,13 +5,13 @@
     "kind": "Directory"
   },
   "applicationId": "io.bytesatwork.skycell.gateway",
-  "variantName": "processGatewayReleaseResources",
+  "variantName": "GatewayRelease",
   "elements": [
     {
       "type": "SINGLE",
       "filters": [],
-      "versionCode": 9,
-      "versionName": "1.0.9-gateway",
+      "versionCode": 10,
+      "versionName": "1.0.10-gateway",
       "outputFile": "app-Gateway-release.apk"
     }
   ]
