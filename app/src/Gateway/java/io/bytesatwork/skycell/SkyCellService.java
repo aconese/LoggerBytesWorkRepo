@@ -246,10 +246,7 @@ public class SkyCellService extends Service {
                     " (Upload URL: " + url + ", Rate: " + rate + "secs)");
             }
 
-            if (!initializeLocation()) {
-                stopSelf();
-                return;
-            } else if (!initializeBluetooth()) {
+            if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()) {
                 stopSelf();
                 return;
             }
@@ -262,6 +259,16 @@ public class SkyCellService extends Service {
 
             mCloudUploader.start();
             mKeepAlive.start();
+        }
+
+        public boolean checkStoragePermission() {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG + ":" + Utils.getLineNumber(), getString(R.string.storage_permission_denied));
+                return false;
+            }
+
+            return true;
         }
 
         public boolean initializeLocation() {
