@@ -25,8 +25,6 @@ public class MainActivity extends Activity {
 
         getWindow().setStatusBarColor(getColor(android.R.color.transparent));
 
-        //TODO: Request Location Permission here if not set
-
         //Start Service
         //if (!SkyCellService.isRunning()) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) { //Android 8.0 SDK 26
