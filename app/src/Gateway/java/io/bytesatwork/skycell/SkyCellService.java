@@ -21,9 +21,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import android.util.Log;
 
@@ -31,6 +37,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import io.bytesatwork.skycell.connectivity.BleService;
+import io.bytesatwork.skycell.connectivity.CloudConnection;
 import io.bytesatwork.skycell.connectivity.CloudUploader;
 import io.bytesatwork.skycell.connectivity.KeepAliveJobService;
 import io.bytesatwork.skycell.sensor.Sensor;
@@ -52,6 +59,9 @@ public class SkyCellService extends Service {
     private long startTime = 0;
     private CloudUploader mCloudUploader;
     private KeepAliveJobService mKeepAlive;
+    private CloudConnection mConnection;
+    private String mUploadURL;
+    private final ConnectivityManager mConnectivityManager;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -59,6 +69,9 @@ public class SkyCellService extends Service {
         this.mExecutor = Executors.newSingleThreadExecutor();
         this.mCloudUploader = new CloudUploader();
         this.mKeepAlive = new KeepAliveJobService();
+        this.mConnection = new CloudConnection();
+        this.mUploadURL = "";
+        this.mConnectivityManager = (ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
     }
 
     public static boolean isRunning() {
@@ -224,6 +237,52 @@ public class SkyCellService extends Service {
         }
     };
 
+    //NetworkCallback starts/stops cloud services on network changes
+    private final ConnectivityManager.NetworkCallback mNetworkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "The default network is now: " + network);
+            NetworkCapabilities networkCapabilities =
+                mConnectivityManager.getNetworkCapabilities(network);
+            if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+                if (mConnection.isServerReachable(mUploadURL)) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Network connected");
+                    if (!mCloudUploader.isRunning()) {
+                        mCloudUploader.start();
+                    }
+                    if (!mKeepAlive.isRunning()) {
+                        mKeepAlive.start();
+                    }
+                }
+            }
+        }
+
+        @Override
+        public void onLost(@NonNull Network network) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "The application no longer has a default" +
+                " network. The last default network was " + network);
+            if (mCloudUploader.isRunning()) {
+                mCloudUploader.stop();
+            }
+            if (mKeepAlive.isRunning()) {
+                mKeepAlive.stop();
+            }
+        }
+
+        @Override
+        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed " +
+                "capabilities: " + networkCapabilities);
+        }
+
+        @Override
+        public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed link " +
+                "properties: " + linkProperties);
+        }
+    };
+
     private class GatewayTask implements Runnable {
         public GatewayTask() {
         }
@@ -237,16 +296,17 @@ public class SkyCellService extends Service {
                 //Create new SensorList
                 app.mSensorList = new SensorList();
                 //Create or load SharedPreferences
-                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
+                mUploadURL = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
                 String apikey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
                 //Create UUID if missing on init
                 String uuid = app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID);
                 long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
                 Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
-                    " (Upload URL: " + url + ", Rate: " + rate + "secs)");
+                    " (Upload URL: " + mUploadURL + ", Rate: " + rate + "secs)");
             }
 
-            if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()) {
+            if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()
+                || !initializeNetworkCallback()) {
                 stopSelf();
                 return;
             }
@@ -256,9 +316,6 @@ public class SkyCellService extends Service {
                 bindService(new Intent(instance, BleService.class), mServiceConnection,
                     BIND_AUTO_CREATE);
             }
-
-            mCloudUploader.start();
-            mKeepAlive.start();
         }
 
         public boolean checkStoragePermission() {
@@ -308,6 +365,15 @@ public class SkyCellService extends Service {
 
             return true;
         }
+
+        public boolean initializeNetworkCallback() {
+            if (mConnectivityManager != null) {
+                mConnectivityManager.registerDefaultNetworkCallback(mNetworkCallback);
+                return true;
+            }
+
+            return false;
+        }
     }
 
     @Override
@@ -329,7 +395,7 @@ public class SkyCellService extends Service {
         }
         mBleService = null;
         mExecutor.shutdown();
-        mCloudUploader.stop();
+        mCloudUploader.shutdown();
         mKeepAlive.stop();
 
         super.onDestroy();
