@@ -69,6 +69,13 @@ public class KeepAliveJobService extends JobService {
         jobScheduler.cancel(JOB_ID);
     }
 
+    public boolean isRunning() {
+        JobScheduler jobScheduler = (JobScheduler)
+            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+
+        return jobScheduler.getAllPendingJobs().stream().anyMatch(job -> job.getId() == JOB_ID);
+    }
+
     @Override
     public boolean onStartJob(final JobParameters params) {
         Log.i(TAG + ":" + Utils.getLineNumber(), "onStartJob()");
