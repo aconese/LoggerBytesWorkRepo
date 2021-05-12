@@ -18,6 +18,7 @@ import java.io.FilenameFilter;
 import java.io.InputStreamReader;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import io.bytesatwork.skycell.Constants;
 import io.bytesatwork.skycell.Settings;
@@ -32,12 +33,14 @@ public class CloudUploader {
     private SkyCellApplication app;
     private ScheduledExecutorService mExecutor;
     private CloudConnection mConnection;
+    private ScheduledFuture<?> mFuture;
 
     public CloudUploader() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         //TODO: Use WorkManager instead of ScheduledExecutorService
         this.mExecutor = Executors.newScheduledThreadPool(1);
         this.mConnection = new CloudConnection();
+        this.mFuture = null;
     }
 
     public void start() {
@@ -46,12 +49,27 @@ public class CloudUploader {
         String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
         String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
         long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
-        mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate, SECONDS);
+        mFuture = mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate,
+            SECONDS);
     }
 
-    public void stop() {
+    public boolean stop() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Stop");
+        if (mFuture != null) {
+            return mFuture.cancel(true);
+        }
+
+        return true;
+    }
+
+    public void shutdown() {
+        stop();
+        Log.i(TAG + ":" + Utils.getLineNumber(), "Shutdown");
         mExecutor.shutdown();
+    }
+
+    public boolean isRunning() {
+        return ((mFuture != null) && !mFuture.isDone());
     }
 
     private class FileUploadTask implements Runnable {
