@@ -25,6 +25,37 @@ public class CloudConnection {
     private static final String TAG = CloudConnection.class.getSimpleName();
 
     /**
+     * Check if the server with the given cloudUrl is reachable.
+     *
+     * @param cloudUrl The url of the cloud
+     * @return Return true if successful, otherwise false.
+     */
+    public boolean isServerReachable(String cloudUrl)
+    {
+        boolean ok = false;
+        HttpsURLConnection connection = null;
+
+        try {
+            URL url = new URL(cloudUrl);
+            String baseUrl = url.getProtocol() + "://" + url.getHost();
+            url = new URL(baseUrl);
+            connection = (HttpsURLConnection) url.openConnection();
+            Object content = connection.getContent();
+            Log.d(TAG+":"+Utils.getLineNumber(), "Got content: " + content);
+            ok = true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            ok = false;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+        return ok;
+    }
+
+    /**
      * Do a get request with the given cloudUrl and returns a response json.
      *
      * @param cloudUrl The url of the cloud
