@@ -12,7 +12,6 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.util.Log;
 
-import io.bytesatwork.skycell.BuildConfig;
 import io.bytesatwork.skycell.Constants;
 import io.bytesatwork.skycell.CustomTime;
 import io.bytesatwork.skycell.Settings;
@@ -33,11 +32,12 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public class Sensor {
     private static final String TAG = Sensor.class.getSimpleName();
-    private SkyCellApplication app;
+    private final SkyCellApplication app;
     private final String mAddress;
     private short mReadPosition;
     public SensorSessionFSM mSensorSessionFSM;
@@ -51,15 +51,15 @@ public class Sensor {
     private boolean mInfosComplete;
     //data
     public SynchronizedByteBuffer mDataBuffer;
-    private List<SensorMeasurement> mData;
+    private final List<SensorMeasurement> mData;
     private boolean mDataComplete;
     //extrema
     public SynchronizedByteBuffer mExtremaBuffer;
-    private List<SensorExtrema> mExtrema;
+    private final List<SensorExtrema> mExtrema;
     private boolean mExtremaComplete;
     //event
     public SynchronizedByteBuffer mEventBuffer;
-    private List<SensorEvent> mEvent;
+    private final List<SensorEvent> mEvent;
     private boolean mEventComplete;
 
     private Sensor() {
@@ -80,6 +80,7 @@ public class Sensor {
         this.mEvent = null;
         this.mEventComplete = false;
         this.mSensorSessionFSM = null;
+        mBleService = null;
     }
 
     public Sensor(BleService bleService, String addr) {
@@ -89,20 +90,20 @@ public class Sensor {
         this.mState = new SensorState();
         this.mStateComplete = false;
         this.mDataBuffer = null;
-        this.mData = Collections.synchronizedList(new ArrayList<SensorMeasurement>());
+        this.mData = Collections.synchronizedList(new ArrayList<>());
         this.mDataComplete = false;
         this.mExtremaBuffer = new SynchronizedByteBuffer(SensorExtrema.getSensorExtremaLength());
-        this.mExtrema = Collections.synchronizedList(new ArrayList<SensorExtrema>());
+        this.mExtrema = Collections.synchronizedList(new ArrayList<>());
         this.mExtremaComplete = false;
         this.mEventBuffer = new SynchronizedByteBuffer(SensorEvent.getSensorEventLength());
-        this.mEvent = Collections.synchronizedList(new ArrayList<SensorEvent>());
+        this.mEvent = Collections.synchronizedList(new ArrayList<>());
         this.mEventComplete = false;
         if (Utils.isGateway()) {
             this.mSensorSessionFSM = new SensorSessionFSM(this);
-            this.mBleService = bleService;
+            mBleService = bleService;
         } else {
             this.mSensorSessionFSM = null;
-            this.mBleService = null;
+            mBleService = null;
         }
     }
 
@@ -120,9 +121,7 @@ public class Sensor {
 
     public boolean parseInfos() {
         if (mSensorInfoBuffer.remaining() == 0) {
-            if (mState.parseSensorInfos(mSensorInfoBuffer.array(), ByteOrder.LITTLE_ENDIAN)) {
-                return true;
-            }
+            return mState.parseSensorInfos(mSensorInfoBuffer.array(), ByteOrder.LITTLE_ENDIAN);
         }
         return false;
     }
@@ -362,7 +361,7 @@ public class Sensor {
         boolean ok = false;
 
         if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-            File file = new File(app.getApplicationContext().getExternalFilesDir(null)
+            File file = new File(Objects.requireNonNull(app.getApplicationContext().getExternalFilesDir(null))
                 .getAbsolutePath(), fileName);
             Log.i(TAG + ":" + Utils.getLineNumber(), "Write: File: " + file.getAbsolutePath());
             try {

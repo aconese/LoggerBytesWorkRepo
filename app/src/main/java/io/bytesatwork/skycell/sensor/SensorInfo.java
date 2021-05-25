@@ -30,8 +30,8 @@ public class SensorInfo {
     }
 
 
-    private long mUID;
-    private byte mPosition;
+    private final long mUID;
+    private final byte mPosition;
     public final SensorType type;
 
     private final static Map<Byte, String> POSITIONS =  new HashMap<Byte, String >(){{

@@ -57,7 +57,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class BleService extends Service {
     private static final String TAG = BleService.class.getSimpleName();
 
-    private SkyCellApplication app;
+    private final SkyCellApplication app;
     private ExecutorService mScheduler;
     private BlockingQueue<Bundle> mSendQueue;
     private Future<?> mSendTask;
@@ -366,10 +366,9 @@ public class BleService extends Service {
     private synchronized void handleState(Sensor sensor, final int offset, final byte[] value) {
         if (sensor != null && !sensor.isStateCompleted()) {
             try {
-                int len = value.length <= sensor.mStateBuffer.remaining() ?
-                    value.length : sensor.mStateBuffer.remaining();
-                Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " + offset + " len: " + len);
-                sensor.mStateBuffer.put(Arrays.copyOfRange(value, 0, len));
+                int length = Math.min(value.length, sensor.mStateBuffer.remaining());
+                Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " + offset + " length: " + length);
+                sensor.mStateBuffer.put(Arrays.copyOfRange(value, 0, length));
                 if (sensor.mStateBuffer.remaining() == 0) {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "State package complete");
 
@@ -384,9 +383,9 @@ public class BleService extends Service {
                             sensor.mState.getRssi()
                         );
                         sensor.completeState();
-                        if(value.length > len) {
+                        if (value.length > length) {
                             // handle the rest of the data
-                            handleState( sensor, 0, Arrays.copyOfRange(value, len, value.length));
+                            handleState(sensor, 0, Arrays.copyOfRange(value, length, value.length));
                         }
                     } else {
                         Log.e(TAG + ":" + Utils.getLineNumber(), "Could not parse State");
@@ -401,8 +400,7 @@ public class BleService extends Service {
             }
         } else if (sensor != null && !sensor.areInfosCompleted()) {
             try {
-                int len = value.length <= sensor.mSensorInfoBuffer.remaining() ?
-                        value.length : sensor.mSensorInfoBuffer.remaining();
+                int len = Math.min(value.length, sensor.mSensorInfoBuffer.remaining());
                 Log.d(TAG + ":" + Utils.getLineNumber(), "SensorInfo: " + offset + " len: " + len);
                 sensor.mSensorInfoBuffer.put(Arrays.copyOfRange(value, 0, len));
                 if (sensor.mSensorInfoBuffer.remaining() == 0) {
@@ -435,12 +433,11 @@ public class BleService extends Service {
                 try {
                     int parsed = 0;
                     while (parsed < value.length) {
-                        int parse_len = value.length <= sensor.mDataBuffer.remaining() ?
-                            value.length : sensor.mDataBuffer.remaining();
+                        int parseLength = Math.min(value.length, sensor.mDataBuffer.remaining());
                         Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
-                            offset + " parsed: " + parsed + " parse_len: " + parse_len);
+                            offset + " parsed: " + parsed + " parseLength: " + parseLength);
                         sensor.mDataBuffer.put(Arrays.copyOfRange(value, parsed,
-                            parsed + parse_len));
+                            parsed + parseLength));
                         if (sensor.mDataBuffer.remaining() == 0) {
                             Log.d(TAG + ":" + Utils.getLineNumber(), "Data package complete");
 
@@ -455,7 +452,7 @@ public class BleService extends Service {
                                 sensor.mDataBuffer.remaining() + " bytes remaining");
                         }
 
-                        parsed = parsed + parse_len;
+                        parsed = parsed + parseLength;
                     }
                 } catch (BufferOverflowException e) {
                     Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received " +
@@ -475,8 +472,7 @@ public class BleService extends Service {
                 try {
                     int parsed = 0;
                     while (parsed < value.length) {
-                        int parse_len = value.length <= sensor.mExtremaBuffer.remaining() ?
-                            value.length : sensor.mExtremaBuffer.remaining();
+                        int parse_len = Math.min(value.length, sensor.mExtremaBuffer.remaining());
                         Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
                             offset + " parsed: " + parsed + " parse_len: " + parse_len);
                         sensor.mExtremaBuffer.put(Arrays.copyOfRange(value, parsed,
@@ -515,8 +511,7 @@ public class BleService extends Service {
                 try {
                     int parsed = 0;
                     while (parsed < value.length) {
-                        int parse_len = value.length <= sensor.mEventBuffer.remaining() ?
-                            value.length : sensor.mEventBuffer.remaining();
+                        int parse_len = Math.min(value.length, sensor.mEventBuffer.remaining());
                         Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
                             offset + " parsed: " + parsed + " parse_len: " + parse_len);
                         sensor.mEventBuffer.put(Arrays.copyOfRange(value, parsed,
@@ -569,7 +564,7 @@ public class BleService extends Service {
         Log.i(TAG + ":" + Utils.getLineNumber(), "onBind");
 
         //Init Queue
-        mSendQueue = new LinkedBlockingQueue<Bundle>();
+        mSendQueue = new LinkedBlockingQueue<>();
 
         //Start Executor
         mScheduler = Executors.newCachedThreadPool();
@@ -714,7 +709,7 @@ public class BleService extends Service {
 
     private List<ScanFilter> scanFilters(String uuid) {
         ScanFilter filter = new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID.fromString(uuid))).build();
-        List<ScanFilter> list = new ArrayList<ScanFilter>(1);
+        List<ScanFilter> list = new ArrayList<>(1);
         list.add(filter);
         return list;
     }
@@ -1042,7 +1037,7 @@ public class BleService extends Service {
     }
 
     private class SendTask implements Runnable {
-        private BlockingQueue<Bundle> queue;
+        private final BlockingQueue<Bundle> queue;
 
         public SendTask(BlockingQueue<Bundle> queue) {
             this.queue = queue;
@@ -1065,7 +1060,6 @@ public class BleService extends Service {
             while ((app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) != null) && mRequestPending) {
                 Thread.sleep(10);
             }
-            if (app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) == null) return;
         }
     }
 }

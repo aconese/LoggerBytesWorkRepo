@@ -60,12 +60,12 @@ public class SensorEvent {
         SENSOR_EVENT_VALUE_LENGTH
     );
 
-    private byte[] mBinaryData;
+    private final byte[] mBinaryData;
 
-    private byte mType;
-    private byte[] mTimeStamp;
-    private byte mSpecific;
-    private byte[] mValue;
+    private final byte mType;
+    private final byte[] mTimeStamp;
+    private final byte mSpecific;
+    private final byte[] mValue;
 
     private SensorEvent() {
         this.mBinaryData = new byte[SENSOR_EVENT_BINARYDATA_LENGTH];

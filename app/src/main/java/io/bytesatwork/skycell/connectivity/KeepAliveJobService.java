@@ -34,16 +34,14 @@ public class KeepAliveJobService extends JobService {
     private static final long KEEPALIVE_INTERVAL = 30 * 60 * 1000L; // 30min
     private static final int MAX_RETRIES = 3;
 
-    private SkyCellApplication app;
-    private KeepAliveTask mKeepAliveTask;
-    private Thread mThread;
-    private CloudConnection mConnection;
-    private GPS mGPS;
+    private final SkyCellApplication app;
+    private final Thread mThread;
+    private final CloudConnection mConnection;
+    private final GPS mGPS;
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
-        this.mKeepAliveTask = new KeepAliveTask();
-        this.mThread = new Thread(mKeepAliveTask);
+        this.mThread = new Thread(new KeepAliveTask());
         this.mConnection = new CloudConnection();
         this.mGPS = new GPS();
         mGPS.registerListener();

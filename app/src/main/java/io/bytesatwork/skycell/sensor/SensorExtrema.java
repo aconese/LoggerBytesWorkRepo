@@ -52,15 +52,15 @@ public class SensorExtrema {
     );
     public static final int SENSOR_EXTREMA_SIGNATURE_LENGTH = 64;
 
-    private byte[] mBinaryData;
-    private byte[] mSignature;
+    private final byte[] mBinaryData;
+    private final byte[] mSignature;
 
-    private byte[] mPeriodStart;
-    private byte[] mPeriodEnd;
-    private byte[] mTimeStamp;
-    private long mUID;
-    private byte mType;
-    private byte[] mValue;
+    private final byte[] mPeriodStart;
+    private final byte[] mPeriodEnd;
+    private final byte[] mTimeStamp;
+    private final long mUID;
+    private final byte mType;
+    private final byte[] mValue;
 
     private SensorExtrema() {
         this.mBinaryData = new byte[SENSOR_EXTREMA_BINARYDATA_LENGTH];

@@ -14,7 +14,7 @@ public class ByteBufferParser {
     private static final String TAG = ByteBufferParser.class.getSimpleName();
 
     private int mParseIndex;
-    private byte[] mBuffer;
+    private final byte[] mBuffer;
 
     public ByteBufferParser(byte[] buffer) {
         this.mParseIndex = 0;

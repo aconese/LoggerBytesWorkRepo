@@ -48,18 +48,18 @@ public class SkyCellService extends Service {
     public static final String CHANNEL_ID = "io.bytesatwork.skycell.CHANNEL_ID";
     public static final String CHANNEL_NAME = "Channel";
 
-    private SkyCellApplication app;
+    private final SkyCellApplication app;
     private static SkyCellService instance = null;
     private final IBinder mBinder;
 
     private BluetoothAdapter mBluetoothAdapter;
     private static BleService mBleService = null;
     private boolean mBleServiceBound = false;
-    private ExecutorService mExecutor;
+    private final ExecutorService mExecutor;
     private long startTime = 0;
-    private CloudUploader mCloudUploader;
-    private KeepAliveJobService mKeepAlive;
-    private CloudConnection mConnection;
+    private final CloudUploader mCloudUploader;
+    private final KeepAliveJobService mKeepAlive;
+    private final CloudConnection mConnection;
     private String mUploadURL;
     private final ConnectivityManager mConnectivityManager;
 

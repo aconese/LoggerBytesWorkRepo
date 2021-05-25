@@ -82,7 +82,7 @@ public class CloudConnection {
             ok = (HttpURLConnection.HTTP_OK <= responseCode &&
                 responseCode <= HttpURLConnection.HTTP_RESET);
             BufferedReader streamReader;
-            String line = "";
+            String line;
             if (ok) {
                 //read response
                 streamReader = new BufferedReader(new InputStreamReader(
@@ -157,7 +157,7 @@ public class CloudConnection {
             ok = (HttpURLConnection.HTTP_OK <= responseCode &&
                 responseCode <= HttpURLConnection.HTTP_RESET);
             BufferedReader streamReader;
-            String line = "";
+            String line;
             if (ok) {
                 //read response
                 streamReader = new BufferedReader(new InputStreamReader(

@@ -23,8 +23,8 @@ public class SensorMeasurement {
     public static final int SENSOR_MEASUREMENT_TIMESTAMP_LENGTH = 4;
     public static final int SENSOR_MEASUREMENT_VALUE_LENGTH = 2;
 
-    private byte[] mTimeStamp;
-    public byte[] mValues;
+    private final byte[] mTimeStamp;
+    public final byte[] mValues;
 
     private SensorMeasurement() {
         this.mTimeStamp = new byte[SENSOR_MEASUREMENT_TIMESTAMP_LENGTH];
