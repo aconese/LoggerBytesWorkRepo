@@ -38,6 +38,7 @@ public class KeepAliveJobService extends JobService {
     private final Thread mThread;
     private final CloudConnection mConnection;
     private final GPS mGPS;
+    private JobScheduler mJobScheduler;
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -45,26 +46,39 @@ public class KeepAliveJobService extends JobService {
         this.mConnection = new CloudConnection();
         this.mGPS = new GPS();
         mGPS.registerListener();
+        this.mJobScheduler = (JobScheduler)
+            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
     }
 
-    public void start() {
+    public boolean start() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "start()");
 
-        JobScheduler jobScheduler = (JobScheduler)
-            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName =
             new ComponentName(app, KeepAliveJobService.class);
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, componentName);
         builder.setPersisted(false); //Don't persist across device reboots
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
         builder.setPeriodic(KEEPALIVE_INTERVAL);
-        jobScheduler.schedule(builder.build());
+
+        if (mJobScheduler != null) {
+            return (mJobScheduler.schedule(builder.build()) == JobScheduler.RESULT_SUCCESS);
+        }
+        return false;
     }
 
-    public void stop() {
-        JobScheduler jobScheduler = (JobScheduler)
-            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.cancel(JOB_ID);
+    public boolean stop() {
+        if (mJobScheduler != null) {
+            mJobScheduler.cancel(JOB_ID);
+            return true;
+        }
+        return false;
+    }
+
+    public void shutdown() {
+        if (mJobScheduler != null) {
+            mJobScheduler.cancel(JOB_ID);
+            mJobScheduler = null;
+        }
     }
 
     public boolean isRunning() {

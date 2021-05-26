@@ -396,7 +396,7 @@ public class SkyCellService extends Service {
         mBleService = null;
         mExecutor.shutdown();
         mCloudUploader.shutdown();
-        mKeepAlive.stop();
+        mKeepAlive.shutdown();
 
         super.onDestroy();
     }
