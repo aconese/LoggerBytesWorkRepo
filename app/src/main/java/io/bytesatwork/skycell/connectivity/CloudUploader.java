@@ -17,6 +17,7 @@ import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -43,14 +44,20 @@ public class CloudUploader {
         this.mFuture = null;
     }
 
-    public void start() {
+    public boolean start() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Start");
         String path = Objects.requireNonNull(app.getApplicationContext().getExternalFilesDir(null)).getAbsolutePath();
         String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
         String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
         long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
-        mFuture = mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate,
-            SECONDS);
+        try {
+            mFuture = mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate,
+                SECONDS);
+        } catch (RejectedExecutionException rejectedExecutionException) {
+            rejectedExecutionException.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
     public boolean stop() {
