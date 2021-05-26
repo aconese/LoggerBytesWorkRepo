@@ -618,11 +618,6 @@ public class BleService extends Service {
             return false;
         }
 
-        if (!BluetoothAdapter.getDefaultAdapter().setName(Constants.SKYCELL_DEVICE_NAME)) {
-            Log.e(TAG + ":" + Utils.getLineNumber(), "Set DeviceName failed");
-            return false;
-        }
-
         Log.i(TAG + ":" + Utils.getLineNumber(), "BLE Initialization is successful.");
         return true;
     }
@@ -789,13 +784,21 @@ public class BleService extends Service {
                     .build();
             }
 
+            int deviceNameLength = BluetoothAdapter.getDefaultAdapter().getName().length();
             AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
+                .setIncludeDeviceName(deviceNameLength > 14 ? false : true)
                 .setIncludeTxPowerLevel(true)
                 .addServiceUuid(Constants.SKYCELL_SERVICE_PARCELUUID)
                 .addServiceData(Constants.SKYCELL_SERVICE_PARCELUUID, serviceData.array())
                 .build();
-            advertiser.startAdvertising(settings, data, mAdvertisingCallback);
+            if (deviceNameLength > 14) { //Add deviceName to scan response if it's longer than 14
+                AdvertiseData scanResponse = new AdvertiseData.Builder()
+                    .setIncludeDeviceName(deviceNameLength > 31 ? false : true)
+                    .build();
+                advertiser.startAdvertising(settings, data, scanResponse, mAdvertisingCallback);
+            } else {
+                advertiser.startAdvertising(settings, data, mAdvertisingCallback);
+            }
         } else {
             advertiser.stopAdvertising(mAdvertisingCallback);
         }
