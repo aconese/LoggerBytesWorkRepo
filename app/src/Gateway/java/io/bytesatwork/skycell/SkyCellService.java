@@ -102,7 +102,13 @@ public class SkyCellService extends Service {
 
                     case BluetoothAdapter.STATE_ON:
                         //Indicates the local Bluetooth adapter is on, and ready for use.
-                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_ON");
+                        Log.i(TAG + ":" + Utils.getLineNumber(), "BluetoothAdapter.STATE_ON");
+                        //Check for advertisement support
+                        if (!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
+                            Log.e(TAG + ":" + Utils.getLineNumber(),
+                                getString(R.string.ble_adv_not_supported));
+                            stopSelf(); //Stop in case of advertisement is not supported
+                        }
                         break;
 
                     case BluetoothAdapter.STATE_TURNING_OFF:
@@ -308,13 +314,6 @@ public class SkyCellService extends Service {
             if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()
                 || !initializeNetworkCallback()) {
                 stopSelf();
-                return;
-            }
-
-            if (mBleService == null) {
-                registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
-                bindService(new Intent(instance, BleService.class), mServiceConnection,
-                    BIND_AUTO_CREATE);
             }
         }
 
@@ -346,10 +345,6 @@ public class SkyCellService extends Service {
             if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
                 Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.ble_not_supported));
                 return false;
-            } else if (!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
-                //Check for advertisement support
-                Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.ble_adv_not_supported));
-                return false;
             }
 
             //Initializes a Bluetooth adapter.
@@ -357,10 +352,19 @@ public class SkyCellService extends Service {
                     (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             mBluetoothAdapter = bluetoothManager.getAdapter();
 
+            //Enable Bluetooth if off
             if (mBluetoothAdapter == null) {
                 return false;
             } else if (!mBluetoothAdapter.isEnabled()) {
-                return mBluetoothAdapter.enable();
+                if (!mBluetoothAdapter.enable()) {
+                    return false;
+                }
+            }
+
+            if (mBleService == null) {
+                registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
+                bindService(new Intent(instance, BleService.class), mServiceConnection,
+                    BIND_AUTO_CREATE);
             }
 
             return true;
