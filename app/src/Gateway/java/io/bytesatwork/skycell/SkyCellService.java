@@ -33,6 +33,7 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -62,6 +63,8 @@ public class SkyCellService extends Service {
     private final CloudConnection mConnection;
     private String mUploadURL;
     private final ConnectivityManager mConnectivityManager;
+    private final GatewayTask mGatewayTask;
+    private final CountDownLatch mCountDownLatch;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -72,6 +75,8 @@ public class SkyCellService extends Service {
         this.mConnection = new CloudConnection();
         this.mUploadURL = "";
         this.mConnectivityManager = (ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
+        this.mGatewayTask = new GatewayTask();
+        this.mCountDownLatch = new CountDownLatch(1);
     }
 
     public static boolean isRunning() {
@@ -108,6 +113,9 @@ public class SkyCellService extends Service {
                             Log.e(TAG + ":" + Utils.getLineNumber(),
                                 getString(R.string.ble_adv_not_supported));
                             stopSelf(); //Stop in case of advertisement is not supported
+                        }
+                        if (!mGatewayTask.initializeBluetoothService()) {
+                            stopSelf();
                         }
                         break;
 
@@ -212,15 +220,8 @@ public class SkyCellService extends Service {
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceConnected");
             mBleService = ((BleService.LocalBinder) service).getService();
-            if (!mBleService.initialize()) {
-                Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
-                stopSelf();
-            }
             mBleServiceBound = true;
-
-            if (mBluetoothAdapter.isEnabled()) {
-                mBleService.advertise(true); //Start permanent advertising
-            }
+            mCountDownLatch.countDown();
         }
 
         @Override
@@ -351,20 +352,41 @@ public class SkyCellService extends Service {
             final BluetoothManager bluetoothManager =
                     (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             mBluetoothAdapter = bluetoothManager.getAdapter();
-
-            //Enable Bluetooth if off
             if (mBluetoothAdapter == null) {
                 return false;
-            } else if (!mBluetoothAdapter.isEnabled()) {
-                if (!mBluetoothAdapter.enable()) {
-                    return false;
-                }
             }
 
             if (mBleService == null) {
                 registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
                 bindService(new Intent(instance, BleService.class), mServiceConnection,
                     BIND_AUTO_CREATE);
+            }
+
+            try {
+                mCountDownLatch.await();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+                return false;
+            }
+
+            //Enable Bluetooth if off
+            if (!mBluetoothAdapter.isEnabled()) {
+                return mBluetoothAdapter.enable();
+            } else {
+                return initializeBluetoothService();
+            }
+        }
+
+        public boolean initializeBluetoothService() {
+            if (mBleService != null) {
+                if (!mBleService.initialize()) {
+                    Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
+                    return false;
+                }
+                mBleService.advertise(true); //Start permanent advertising
+            } else {
+                Log.e(TAG + ":" + Utils.getLineNumber(), "BLE Service is null");
+                return false;
             }
 
             return true;
@@ -442,7 +464,7 @@ public class SkyCellService extends Service {
 
         startForeground(startId, notificationBuilder.build());
 
-        mExecutor.execute(new GatewayTask());
+        mExecutor.execute(mGatewayTask);
 
         //We want this service to continue running until it is explicitly stopped
         return START_STICKY;
