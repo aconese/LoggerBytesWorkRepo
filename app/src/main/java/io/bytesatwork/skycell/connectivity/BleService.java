@@ -622,6 +622,19 @@ public class BleService extends Service {
         return true;
     }
 
+    public boolean deinitialize() {
+        if (mGattServer == null) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "mGattServer is null");
+            return false;
+        }
+
+        Log.i(TAG + ":" + Utils.getLineNumber(), "mGattServer clearServices and close");
+        mGattServer.clearServices();
+        mGattServer.close();
+
+        return true;
+    }
+
     /**
      * After using a given BLE device, the app must call this method to ensure resources are
      * released properly.
