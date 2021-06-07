@@ -127,6 +127,9 @@ public class SkyCellService extends Service {
                     case BluetoothAdapter.STATE_OFF:
                         //Indicates the local Bluetooth adapter is off.
                         Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_OFF");
+                        if (mBleService != null) {
+                            mBleService.deinitialize();
+                        }
                         break;
 
                     default:
@@ -228,6 +231,7 @@ public class SkyCellService extends Service {
         public void onServiceDisconnected(ComponentName componentName) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceDisconnected");
             mBleService.advertise(false); //Stop permanent advertising
+            mBleService.deinitialize();
             mBleService = null;
             mBleServiceBound = false;
         }
@@ -415,6 +419,7 @@ public class SkyCellService extends Service {
         instance = null;
 
         if (mBleServiceBound && mBleService != null) {
+            mBleService.deinitialize();
             unregisterReceiver(mGattUpdateReceiver);
             unbindService(mServiceConnection);
             mBleServiceBound = false;
