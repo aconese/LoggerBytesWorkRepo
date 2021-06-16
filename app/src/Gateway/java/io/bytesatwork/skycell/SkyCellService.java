@@ -31,11 +31,14 @@ import android.os.IBinder;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+
+import android.os.SystemClock;
 import android.util.Log;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.connectivity.CloudConnection;
@@ -169,7 +172,7 @@ public class SkyCellService extends Service {
                 } else if (BleService.ACTION_SKYCELL_DATA_ALL.equals(action)) {
                     Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA_ALL");
                     Log.i(TAG+":"+Utils.getLineNumber(), "time readData: " +
-                        (System.currentTimeMillis() - startTime) / 1000 + "sec");
+                        TimeUnit.MILLISECONDS.toSeconds(SystemClock.elapsedRealtime() - startTime) + "sec");
                     if (sensor != null) {
                         sensor.mSensorSessionFSM.signalDataComplete();
                     }
@@ -192,7 +195,7 @@ public class SkyCellService extends Service {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "ACTION_SKYCELL_EVENT_ALL");
                     if (sensor != null) {
                         sensor.mSensorSessionFSM.signalEventComplete();
-                        startTime = System.currentTimeMillis();
+                        startTime = SystemClock.elapsedRealtime();
                     }
                 }
             }
