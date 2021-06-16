@@ -103,7 +103,7 @@ public class SensorEvent {
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
     public byte getSpecific() {

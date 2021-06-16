@@ -17,6 +17,7 @@ public final class Constants {
     private Constants() {
     }
 
+    public static final long EPOCH_OFFSET_MS = 946684800000L;
     public static final byte[] EMPTY_BYTES = {};
     public static final String TIMEZONE_UTC = "UTC";
     public static final String DATEFORMAT_UTC = "yyyy-MM-dd'T'HH:mm:ss";

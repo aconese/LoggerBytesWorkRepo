@@ -25,11 +25,11 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Objects;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public final class Utils {
     private static final String TAG = Utils.class.getSimpleName();
     static final private char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-    static final private int EPOCH_OFFSET = 946684800;
 
     //restrict instantiation
     private Utils() {
@@ -103,7 +103,7 @@ public final class Utils {
     public static long convertBytesToTimeStamp(byte[] value, int offset, int len, ByteOrder order) {
         if (len == 2 || len == 4) {
             long timeStamp = convertBytesToInt(value, offset, len, order);
-            return timeStamp + EPOCH_OFFSET;
+            return TimeUnit.SECONDS.toMillis(timeStamp) + Constants.EPOCH_OFFSET_MS;
         } else if (len == 8) {
             return convertBytesToLong(value, offset, len, order);
         }

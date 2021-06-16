@@ -8,6 +8,8 @@
 
 package io.bytesatwork.skycell.statemachine;
 
+import java.util.concurrent.TimeUnit;
+
 import io.bytesatwork.skycell.CustomTime;
 import io.bytesatwork.skycell.sensor.Sensor;
 
@@ -64,7 +66,7 @@ public class SensorSessionFSM {
     }
 
     public void sendDataRequest() {
-        mSensor.mBleService.sendReadData(mSensor.getAddress(), (CustomTime.getInstance().currentTimeMillis() / 1000));
+        mSensor.mBleService.sendReadData(mSensor.getAddress(), TimeUnit.MILLISECONDS.toSeconds(CustomTime.getInstance().currentTimeMillis()));
     }
 
     public void resetTimeout() {

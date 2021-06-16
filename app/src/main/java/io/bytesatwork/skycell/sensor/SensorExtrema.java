@@ -114,19 +114,19 @@ public class SensorExtrema {
     public String getUTCPeriodStartTimeStamp() {
         long startTimeStamp = Utils.convertBytesToTimeStamp(mPeriodStart, 0,
             mPeriodStart.length, ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(startTimeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(startTimeStamp);
     }
 
     public String getUTCPeriodEndTimeStamp() {
         long endTimeStamp = Utils.convertBytesToTimeStamp(mPeriodEnd, 0,
             mPeriodEnd.length, ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(endTimeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(endTimeStamp);
     }
 
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
     public String getUUID() { return Long.toHexString(mUID); }
