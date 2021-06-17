@@ -46,6 +46,7 @@ import io.bytesatwork.skycell.connectivity.CloudUploader;
 import io.bytesatwork.skycell.connectivity.KeepAliveJobService;
 import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
+import io.bytesatwork.skycell.statemachine.ConnectivityFSM;
 
 public class SkyCellService extends Service {
     private static final String TAG = SkyCellService.class.getSimpleName();
@@ -68,6 +69,7 @@ public class SkyCellService extends Service {
     private final ConnectivityManager mConnectivityManager;
     private final GatewayTask mGatewayTask;
     private final CountDownLatch mCountDownLatch;
+    private final ConnectivityFSM mConnectivityFSM;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -80,6 +82,25 @@ public class SkyCellService extends Service {
         this.mConnectivityManager = (ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
         this.mGatewayTask = new GatewayTask();
         this.mCountDownLatch = new CountDownLatch(1);
+        this.mConnectivityFSM = new ConnectivityFSM(this);
+    }
+
+    public boolean startAdvertising() {
+        if (mBleService != null && mBleService.isInitialized()) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "startAdvertising()");
+            return mBleService.advertise(true); //Start permanent advertising
+        }
+
+        return false;
+    }
+
+    public boolean stopAdvertising() {
+        if (mBleService != null && mBleService.isInitialized()) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "stopAdvertising()");
+            return mBleService.advertise(false); //Stop advertising
+        }
+
+        return false;
     }
 
     public static boolean isRunning() {
@@ -120,6 +141,8 @@ public class SkyCellService extends Service {
                         if (!mGatewayTask.initializeBluetoothService()) {
                             stopSelf();
                         }
+
+                        mConnectivityFSM.signalBleOn();
                         break;
 
                     case BluetoothAdapter.STATE_TURNING_OFF:
@@ -130,9 +153,12 @@ public class SkyCellService extends Service {
                     case BluetoothAdapter.STATE_OFF:
                         //Indicates the local Bluetooth adapter is off.
                         Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_OFF");
-                        if (mBleService != null) {
+
+                        if (mBleService != null && mBleService.isInitialized()) {
                             mBleService.deinitialize();
                         }
+
+                        mConnectivityFSM.signalBleOff();
                         break;
 
                     default:
@@ -220,6 +246,20 @@ public class SkyCellService extends Service {
         return intentFilter;
     }
 
+    private final BroadcastReceiver mCloudTimeReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (KeepAliveJobService.ACTION_SKYCELL_CLOUD_TIME.equals(action)) {
+                if (CustomTime.getInstance().hasValidTime()) {
+                    Log.d(TAG + ":" + Utils.getLineNumber(), "Got a valid time");
+                    mConnectivityFSM.signalValidTime();
+                }
+            }
+        }
+    };
+
     //Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
@@ -233,9 +273,13 @@ public class SkyCellService extends Service {
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceDisconnected");
-            mBleService.advertise(false); //Stop permanent advertising
-            mBleService.deinitialize();
-            mBleService = null;
+            if (mBleService != null) {
+                mBleService.advertise(false); //Stop permanent advertising
+                if (mBleService.isInitialized()) {
+                    mBleService.deinitialize();
+                }
+                mBleService = null;
+            }
             mBleServiceBound = false;
         }
 
@@ -271,6 +315,8 @@ public class SkyCellService extends Service {
             if (mKeepAlive.isRunning()) {
                 mKeepAlive.stop();
             }
+
+            mConnectivityFSM.signalWifiOff();
         }
 
         @Override
@@ -289,6 +335,8 @@ public class SkyCellService extends Service {
         private void checkCapabilities(NetworkCapabilities networkCapabilities) {
             if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                 !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+                mConnectivityFSM.signalWifiOn();
+
                 if (mConnection.isServerReachable(mUploadURL)) {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud reachable - start services");
                     if (!mCloudUploader.isRunning()) {
@@ -297,6 +345,8 @@ public class SkyCellService extends Service {
                     if (!mKeepAlive.isRunning()) {
                         mKeepAlive.start();
                     }
+
+                    mConnectivityFSM.signalCloudOn();
                 } else {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud NOT reachable - stop services");
                     if (mCloudUploader.isRunning()) {
@@ -305,7 +355,11 @@ public class SkyCellService extends Service {
                     if (mKeepAlive.isRunning()) {
                         mKeepAlive.stop();
                     }
+
+                    mConnectivityFSM.signalCloudOff();
                 }
+            } else {
+                mConnectivityFSM.signalWifiOff();
             }
         }
     };
@@ -333,7 +387,7 @@ public class SkyCellService extends Service {
             }
 
             if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()
-                || !initializeNetworkCallback()) {
+                || !initializeNetworkCallback() || !initializeCloudReceiver()) {
                 stopSelf();
             }
         }
@@ -393,17 +447,34 @@ public class SkyCellService extends Service {
             if (!mBluetoothAdapter.isEnabled()) {
                 return mBluetoothAdapter.enable();
             } else {
-                return initializeBluetoothService();
+                if (!initializeBluetoothService()) {
+                    return false;
+                } else {
+                    mConnectivityFSM.signalBleOn();
+                }
             }
+
+            return true;
+        }
+
+        public boolean initializeCloudReceiver() {
+            final IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(KeepAliveJobService.ACTION_SKYCELL_CLOUD_TIME);
+            intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
+            registerReceiver(mCloudTimeReceiver, intentFilter);
+            return true;
         }
 
         public boolean initializeBluetoothService() {
             if (mBleService != null) {
+                if (mBleService.isInitialized()) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Bluetooth already initialized");
+                    return true;
+                }
                 if (!mBleService.initialize()) {
                     Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
                     return false;
                 }
-                mBleService.advertise(true); //Start permanent advertising
             } else {
                 Log.e(TAG + ":" + Utils.getLineNumber(), "BLE Service is null");
                 return false;
@@ -435,11 +506,14 @@ public class SkyCellService extends Service {
         instance = null;
 
         if (mBleServiceBound && mBleService != null) {
-            mBleService.deinitialize();
+            if (mBleService.isInitialized()) {
+                mBleService.deinitialize();
+            }
             unregisterReceiver(mGattUpdateReceiver);
             unbindService(mServiceConnection);
             mBleServiceBound = false;
         }
+        unregisterReceiver(mCloudTimeReceiver);
         mBleService = null;
         mExecutor.shutdown();
         mCloudUploader.shutdown();

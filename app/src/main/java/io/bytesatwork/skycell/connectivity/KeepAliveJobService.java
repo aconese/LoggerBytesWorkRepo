@@ -14,6 +14,7 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -39,6 +40,11 @@ public class KeepAliveJobService extends JobService {
     private final CloudConnection mConnection;
     private final GPS mGPS;
     private JobScheduler mJobScheduler;
+    private final Intent mCloudTimeIntent;
+
+    //Intent Action
+    public static final String ACTION_SKYCELL_CLOUD_TIME =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_CLOUD_TIME";
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -48,6 +54,7 @@ public class KeepAliveJobService extends JobService {
         mGPS.registerListener();
         this.mJobScheduler = (JobScheduler)
             app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        this.mCloudTimeIntent = new Intent(ACTION_SKYCELL_CLOUD_TIME);
     }
 
     public boolean start() {
@@ -106,16 +113,17 @@ public class KeepAliveJobService extends JobService {
     }
 
     private class KeepAliveTask implements Runnable {
-
         public void run() {
             for (int i = 0; i < MAX_RETRIES; ++i) {
-                if (getTimeOfCloud()) break;
+                if (getTimeOfCloud()) {
+                    sendBroadcast(mCloudTimeIntent);
+                    break;
+                }
             }
             for (int i = 0; i < MAX_RETRIES; ++i) {
                 if (sendKeepAlive()) break;
             }
         }
-
 
         private boolean sendKeepAlive() {
             boolean ok = false;
