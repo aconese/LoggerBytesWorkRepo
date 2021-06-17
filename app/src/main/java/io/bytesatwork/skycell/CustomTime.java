@@ -36,8 +36,21 @@ public class CustomTime {
         return timeStamp;
     }
 
-    public void setCloudTimeStamp(long timeStamp) {
+    public boolean setCloudTimeStamp(long timeStamp) {
+        if (!isTimeStampValid(timeStamp)) {
+            return false;
+        }
+
         mCloudTimeStamp = timeStamp;
         mElapsedRealtimeStart = SystemClock.elapsedRealtime();
+        return true;
+    }
+
+    public boolean hasValidTime() {
+        return isTimeStampValid(mCloudTimeStamp);
+    }
+
+    private boolean isTimeStampValid(long timeStamp) {
+        return timeStamp > Constants.EPOCH_OFFSET_MS;
     }
 }

@@ -161,8 +161,7 @@ public class KeepAliveJobService extends JobService {
                         Log.i(TAG + ":" + Utils.getLineNumber(),
                             "timeStamp: " + utcTime + " -> " + timeStamp);
                         //Set Time
-                        CustomTime.getInstance().setCloudTimeStamp(timeStamp);
-                        ok = true;
+                        ok = CustomTime.getInstance().setCloudTimeStamp(timeStamp);
                     } else {
                         ok = false;
                     }
