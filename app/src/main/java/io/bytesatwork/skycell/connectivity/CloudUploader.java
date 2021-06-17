@@ -115,6 +115,7 @@ public class CloudUploader {
                                             "Upload ok - delete file: " + ok);
                                     } else {
                                         Log.w(TAG + ":" + Utils.getLineNumber(), "Upload failed");
+                                        break;
                                     }
                                 }
                             } catch (Exception e) {
