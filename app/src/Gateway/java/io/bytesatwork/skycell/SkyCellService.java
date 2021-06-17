@@ -258,18 +258,7 @@ public class SkyCellService extends Service {
             Log.i(TAG + ":" + Utils.getLineNumber(), "The default network is now: " + network);
             NetworkCapabilities networkCapabilities =
                 mConnectivityManager.getNetworkCapabilities(network);
-            if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-                !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
-                if (mConnection.isServerReachable(mUploadURL)) {
-                    Log.i(TAG + ":" + Utils.getLineNumber(), "Network connected");
-                    if (!mCloudUploader.isRunning()) {
-                        mCloudUploader.start();
-                    }
-                    if (!mKeepAlive.isRunning()) {
-                        mKeepAlive.start();
-                    }
-                }
-            }
+            checkCapabilities(networkCapabilities);
         }
 
         @Override
@@ -288,12 +277,36 @@ public class SkyCellService extends Service {
         public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
             Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed " +
                 "capabilities: " + networkCapabilities);
+            checkCapabilities(networkCapabilities);
         }
 
         @Override
         public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
             Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed link " +
                 "properties: " + linkProperties);
+        }
+
+        private void checkCapabilities(NetworkCapabilities networkCapabilities) {
+            if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+                if (mConnection.isServerReachable(mUploadURL)) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud reachable - start services");
+                    if (!mCloudUploader.isRunning()) {
+                        mCloudUploader.start();
+                    }
+                    if (!mKeepAlive.isRunning()) {
+                        mKeepAlive.start();
+                    }
+                } else {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud NOT reachable - stop services");
+                    if (mCloudUploader.isRunning()) {
+                        mCloudUploader.stop();
+                    }
+                    if (mKeepAlive.isRunning()) {
+                        mKeepAlive.stop();
+                    }
+                }
+            }
         }
     };
 

@@ -44,7 +44,6 @@ public class CloudConnection {
             Log.d(TAG+":"+Utils.getLineNumber(), "Got content: " + content);
             ok = true;
         } catch (Exception e) {
-            e.printStackTrace();
             ok = false;
         } finally {
             if (connection != null) {
