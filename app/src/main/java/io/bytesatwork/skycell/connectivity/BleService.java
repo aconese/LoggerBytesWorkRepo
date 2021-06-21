@@ -62,6 +62,7 @@ public class BleService extends Service {
     private BlockingQueue<Bundle> mSendQueue;
     private Future<?> mSendTask;
     private boolean mRequestPending;
+    private boolean mInitialized = false;
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -619,6 +620,7 @@ public class BleService extends Service {
         }
 
         Log.i(TAG + ":" + Utils.getLineNumber(), "BLE Initialization is successful.");
+        mInitialized = true;
         return true;
     }
 
@@ -632,7 +634,12 @@ public class BleService extends Service {
         mGattServer.clearServices();
         mGattServer.close();
 
+        mInitialized = false;
         return true;
+    }
+
+    public boolean isInitialized() {
+        return mInitialized;
     }
 
     /**
