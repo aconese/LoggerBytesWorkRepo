@@ -8,21 +8,48 @@
 
 package io.bytesatwork.skycell.connectivity;
 
+import android.content.Intent;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import io.bytesatwork.skycell.Settings;
+import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.Utils;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class CloudConnection {
     private static final String TAG = CloudConnection.class.getSimpleName();
+
+    private final SkyCellApplication app;
+    private final ScheduledExecutorService mExecutor;
+    private ScheduledFuture<?> mFuture;
+
+    //Intent Action
+    public static final String ACTION_SKYCELL_CLOUD_ONLINE =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_CLOUD_ONLINE";
+    public static final String EXTRA_SKYCELL_CLOUD_ONLINE =
+        "io.bytesatwork.skycell.EXTRA_SKYCELL_CLOUD_ONLINE";
+
+    public CloudConnection() {
+        this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
+        this.mExecutor = Executors.newScheduledThreadPool(1);
+        this.mFuture = null;
+    }
 
     /**
      * Check if the server with the given cloudUrl is reachable.
@@ -41,7 +68,7 @@ public class CloudConnection {
             url = new URL(baseUrl);
             connection = (HttpsURLConnection) url.openConnection();
             Object content = connection.getContent();
-            Log.d(TAG+":"+Utils.getLineNumber(), "Got content: " + content);
+            Log.v(TAG + ":" + Utils.getLineNumber(), "Got content: " + content);
             ok = true;
         } catch (Exception e) {
             ok = false;
@@ -52,6 +79,51 @@ public class CloudConnection {
         }
 
         return ok;
+    }
+
+    public boolean start(String cloudUrl) {
+        Log.i(TAG + ":" + Utils.getLineNumber(), "Start");
+        try {
+            mFuture = mExecutor.scheduleAtFixedRate(new CloudConnection.CloudCheckerTask(cloudUrl),
+                0, 10, SECONDS);
+        } catch (RejectedExecutionException rejectedExecutionException) {
+            rejectedExecutionException.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
+    public boolean stop() {
+        Log.i(TAG + ":" + Utils.getLineNumber(), "Stop");
+        if (mFuture != null) {
+            return mFuture.cancel(true);
+        }
+
+        return true;
+    }
+
+    public void shutdown() {
+        stop();
+        Log.i(TAG + ":" + Utils.getLineNumber(), "Shutdown");
+        mExecutor.shutdown();
+    }
+
+    public boolean isRunning() {
+        return ((mFuture != null) && !mFuture.isDone());
+    }
+
+    private class CloudCheckerTask implements Runnable {
+        String mUrl;
+
+        public CloudCheckerTask(String url) {
+            this.mUrl = url;
+        }
+
+        public void run() {
+            final Intent intent = new Intent(ACTION_SKYCELL_CLOUD_ONLINE);
+            intent.putExtra(EXTRA_SKYCELL_CLOUD_ONLINE, isServerReachable(mUrl));
+            app.sendBroadcast(intent);
+        }
     }
 
     /**

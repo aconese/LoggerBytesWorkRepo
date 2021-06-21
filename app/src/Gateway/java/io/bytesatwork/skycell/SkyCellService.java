@@ -246,7 +246,7 @@ public class SkyCellService extends Service {
         return intentFilter;
     }
 
-    private final BroadcastReceiver mCloudTimeReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mCloudReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
@@ -255,6 +255,26 @@ public class SkyCellService extends Service {
                 if (CustomTime.getInstance().hasValidTime()) {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "Got a valid time");
                     mConnectivityFSM.signalValidTime();
+                }
+            } else if (CloudConnection.ACTION_SKYCELL_CLOUD_ONLINE.equals(action)) {
+                boolean online = intent.getBooleanExtra(CloudConnection.EXTRA_SKYCELL_CLOUD_ONLINE,
+                    false);
+                if (online) {
+                    if (!mCloudUploader.isRunning()) {
+                        mCloudUploader.start();
+                    }
+                    if (!mKeepAlive.isRunning()) {
+                        mKeepAlive.start();
+                    }
+                    mConnectivityFSM.signalCloudOn();
+                } else {
+                    if (mCloudUploader.isRunning()) {
+                        mCloudUploader.stop();
+                    }
+                    if (mKeepAlive.isRunning()) {
+                        mKeepAlive.stop();
+                    }
+                    mConnectivityFSM.signalCloudOff();
                 }
             }
         }
@@ -317,6 +337,7 @@ public class SkyCellService extends Service {
             }
 
             mConnectivityFSM.signalWifiOff();
+            mConnection.stop();
         }
 
         @Override
@@ -336,30 +357,10 @@ public class SkyCellService extends Service {
             if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                 !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
                 mConnectivityFSM.signalWifiOn();
-
-                if (mConnection.isServerReachable(mUploadURL)) {
-                    Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud reachable - start services");
-                    if (!mCloudUploader.isRunning()) {
-                        mCloudUploader.start();
-                    }
-                    if (!mKeepAlive.isRunning()) {
-                        mKeepAlive.start();
-                    }
-
-                    mConnectivityFSM.signalCloudOn();
-                } else {
-                    Log.i(TAG + ":" + Utils.getLineNumber(), "Cloud NOT reachable - stop services");
-                    if (mCloudUploader.isRunning()) {
-                        mCloudUploader.stop();
-                    }
-                    if (mKeepAlive.isRunning()) {
-                        mKeepAlive.stop();
-                    }
-
-                    mConnectivityFSM.signalCloudOff();
-                }
+                mConnection.start(mUploadURL);
             } else {
                 mConnectivityFSM.signalWifiOff();
+                mConnection.stop();
             }
         }
     };
@@ -460,8 +461,9 @@ public class SkyCellService extends Service {
         public boolean initializeCloudReceiver() {
             final IntentFilter intentFilter = new IntentFilter();
             intentFilter.addAction(KeepAliveJobService.ACTION_SKYCELL_CLOUD_TIME);
+            intentFilter.addAction(CloudConnection.ACTION_SKYCELL_CLOUD_ONLINE);
             intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
-            registerReceiver(mCloudTimeReceiver, intentFilter);
+            registerReceiver(mCloudReceiver, intentFilter);
             return true;
         }
 
@@ -513,9 +515,10 @@ public class SkyCellService extends Service {
             unbindService(mServiceConnection);
             mBleServiceBound = false;
         }
-        unregisterReceiver(mCloudTimeReceiver);
+        unregisterReceiver(mCloudReceiver);
         mBleService = null;
         mExecutor.shutdown();
+        mConnection.shutdown();
         mCloudUploader.shutdown();
         mKeepAlive.shutdown();
 
