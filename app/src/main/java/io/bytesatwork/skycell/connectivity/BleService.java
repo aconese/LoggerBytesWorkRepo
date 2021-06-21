@@ -779,23 +779,17 @@ public class BleService extends Service {
                 serviceData.order(ByteOrder.LITTLE_ENDIAN);
                 serviceData.put(isGateway);
                 serviceData.put(cid);
-
-                settings = new AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                    .setConnectable(true)
-                    .build();
             } else {
                 serviceData = ByteBuffer.allocate(1);
                 serviceData.order(ByteOrder.LITTLE_ENDIAN);
                 serviceData.put(isGateway);
-
-                settings = new AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                    .setConnectable(true)
-                    .build();
             }
+
+            settings = new AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                .setConnectable(true)
+                .build();
 
             int deviceNameLength = BluetoothAdapter.getDefaultAdapter().getName().length();
             AdvertiseData data = new AdvertiseData.Builder()
