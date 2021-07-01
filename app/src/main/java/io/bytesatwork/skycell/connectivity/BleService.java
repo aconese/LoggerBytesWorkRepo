@@ -586,7 +586,7 @@ public class BleService extends Service {
      *
      * @return Return true if the initialization is successful.
      */
-    public boolean initialize() {
+    public synchronized boolean initialize() {
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         if (mBluetoothManager == null) {
@@ -616,6 +616,7 @@ public class BleService extends Service {
 
         if (!mGattServer.addService(setupSkyCellService())) {
             Log.e(TAG + ":" + Utils.getLineNumber(), "Adding Service failed");
+            mGattServer.close(); //Close gattServer if service adding fails
             return false;
         }
 
@@ -624,9 +625,10 @@ public class BleService extends Service {
         return true;
     }
 
-    public boolean deinitialize() {
+    public synchronized boolean deinitialize() {
         if (mGattServer == null) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "mGattServer is null");
+            mInitialized = false;
             return false;
         }
 
@@ -638,7 +640,7 @@ public class BleService extends Service {
         return true;
     }
 
-    public boolean isInitialized() {
+    public synchronized boolean isInitialized() {
         return mInitialized;
     }
 
