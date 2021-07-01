@@ -148,6 +148,12 @@ public class SkyCellService extends Service {
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         //Indicates the local Bluetooth adapter is turning off. Local clients should immediately attempt graceful disconnection of any remote links.
                         Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_TURNING_OFF");
+
+                        if (mBleService != null) {
+                            mBleService.deinitialize();
+                        }
+
+                        mConnectivityFSM.signalBleOff();
                         break;
 
                     case BluetoothAdapter.STATE_OFF:
