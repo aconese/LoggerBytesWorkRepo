@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import java.io.ByteArrayInputStream;
@@ -11,10 +19,14 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
+import java.time.format.DateTimeFormatter;
 
 public final class Utils {
     private static final String TAG = Utils.class.getSimpleName();
@@ -107,6 +119,19 @@ public final class Utils {
         SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
         dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
         return dateFormat.format(cal.getTime());
+    }
+
+    public static long convertUTCStringToTimeStamp(String timeStamp) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
+        dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
+        long ts = 0;
+        try {
+            ts = dateFormat.parse(timeStamp).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return ts;
     }
 
     public static String convertBytesToHexString(byte[] value) {

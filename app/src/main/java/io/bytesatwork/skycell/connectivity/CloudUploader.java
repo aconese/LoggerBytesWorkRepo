@@ -1,20 +1,21 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.connectivity;
 
 import android.os.Environment;
 import android.util.Log;
-import javax.net.ssl.HttpsURLConnection;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FilenameFilter;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Arrays;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -30,17 +31,19 @@ public class CloudUploader {
 
     private SkyCellApplication app;
     private ScheduledExecutorService mExecutor;
+    private CloudConnection mConnection;
 
     public CloudUploader() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
-        //TODO: Use JobScheduler instead of ScheduledExecutorService
+        //TODO: Use WorkManager instead of ScheduledExecutorService
         this.mExecutor = Executors.newScheduledThreadPool(1);
+        this.mConnection = new CloudConnection();
     }
 
     public void start() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Start");
         String path = app.getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
-        String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+        String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
         String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
         long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
         mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate, SECONDS);
@@ -85,7 +88,7 @@ public class CloudUploader {
                             }
                             buffreader.close();
                             if (json.length() > 0) {
-                                if (upload(json.toString(), files[i].getName())) {
+                                if (mConnection.post(json.toString(), mUrl, mApikey) != null) {
                                     Log.i(TAG + ":" + Utils.getLineNumber(),
                                         "Upload ok - delete file");
                                     files[i].delete();
@@ -99,65 +102,6 @@ public class CloudUploader {
                     }
                 }
             }
-        }
-
-        private boolean upload(String json, String fileName) {
-            boolean ok = false;
-            HttpURLConnection connection = null;
-
-            try {
-                //header
-                Log.i(TAG + ":" + Utils.getLineNumber(), "Send JSON to: " + mUrl);
-                URL url = new URL(mUrl);
-                connection = (HttpsURLConnection) url.openConnection();
-                connection.setDoOutput(true);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Accept", "application/json");
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("APIKEY", mApikey);
-
-                //send json
-                DataOutputStream out = new DataOutputStream(connection.getOutputStream());
-                out.writeBytes(json);
-                out.flush();
-                out.close();
-
-                //get status
-                int responseCode = connection.getResponseCode();
-                Log.i(TAG + ":" + Utils.getLineNumber(), "Status: " + responseCode);
-                ok = (HttpURLConnection.HTTP_OK <= responseCode &&
-                    responseCode <= HttpURLConnection.HTTP_RESET);
-                if (!ok) {
-                    //read error
-                    BufferedReader errorStreamReader = new BufferedReader(new InputStreamReader(
-                            new BufferedInputStream(connection.getErrorStream())));
-                    String line = "";
-                    while ((line = errorStreamReader.readLine()) != null) {
-                        Log.w(TAG + ":" + Utils.getLineNumber(), line);
-                    }
-                    errorStreamReader.close();
-                } else {
-                    //read response
-                    BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(
-                            new BufferedInputStream(connection.getInputStream())));
-                    String line = "";
-                    while ((line = responseStreamReader.readLine()) != null) {
-                        Log.i(TAG + ":" + Utils.getLineNumber(), line);
-                    }
-                    responseStreamReader.close();
-                }
-
-                //disconnect
-                connection.disconnect();
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-
-            return ok;
         }
     }
 }

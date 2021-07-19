@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import io.bytesatwork.skycell.connectivity.BleService;
@@ -10,13 +18,13 @@ import android.content.IntentFilter;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
-import android.support.v7.widget.DividerItemDecoration;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.app.ActionBar;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;

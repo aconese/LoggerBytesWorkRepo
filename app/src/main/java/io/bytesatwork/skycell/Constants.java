@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import android.os.ParcelUuid;
@@ -18,6 +26,10 @@ public final class Constants {
     //FLAVOUR
     public static final String FLAVOUR_GATEWAY = "Gateway";
     public static final String FLAVOUR_MOBILE = "Mobile";
+
+    //Gateway STATUS
+    public static final String GATEWAY_STATUS_OFFLINE = "OFFLINE";
+    public static final String GATEWAY_STATUS_ONLINE = "ONLINE";
 
     //BLE
     public static final String SKYCELL_DEVICE_NAME = "SkyCell";

@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.connectivity;
 
 import io.bytesatwork.skycell.Constants;
@@ -780,7 +788,7 @@ public class BleService extends Service {
                 serviceData.put(isGateway);
 
                 settings = new AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
+                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                     .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
                     .setConnectable(true)
                     .build();
@@ -1054,8 +1062,6 @@ public class BleService extends Service {
         }
 
         private void consume(Bundle b) throws InterruptedException {
-            //long startTime = System.currentTimeMillis();
-
             while ((app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) != null) && mRequestPending) {
                 Thread.sleep(10);
             }

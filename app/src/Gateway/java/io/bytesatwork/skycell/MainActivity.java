@@ -1,10 +1,18 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 public class MainActivity extends Activity {
@@ -16,8 +24,6 @@ public class MainActivity extends Activity {
         Log.i(TAG+":"+Utils.getLineNumber(), "onCreate");
 
         getWindow().setStatusBarColor(getColor(android.R.color.transparent));
-
-        //TODO: Request Location Permission here if not set
 
         //Start Service
         //if (!SkyCellService.isRunning()) {

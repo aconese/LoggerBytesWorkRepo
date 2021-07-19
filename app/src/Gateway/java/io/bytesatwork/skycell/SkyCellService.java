@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import android.Manifest;
@@ -16,7 +24,7 @@ import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
-import android.support.v4.app.NotificationCompat;
+import androidx.core.app.NotificationCompat;
 import android.util.Log;
 
 import java.util.concurrent.ExecutorService;
@@ -24,6 +32,7 @@ import java.util.concurrent.Executors;
 
 import io.bytesatwork.skycell.connectivity.BleService;
 import io.bytesatwork.skycell.connectivity.CloudUploader;
+import io.bytesatwork.skycell.connectivity.KeepAliveJobService;
 import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
 
@@ -42,12 +51,14 @@ public class SkyCellService extends Service {
     private ExecutorService mExecutor;
     private long startTime = 0;
     private CloudUploader mCloudUploader;
+    private KeepAliveJobService mKeepAlive;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
         this.mBinder = new LocalBinder();
         this.mExecutor = Executors.newSingleThreadExecutor();
         this.mCloudUploader = new CloudUploader();
+        this.mKeepAlive = new KeepAliveJobService();
     }
 
     public static boolean isRunning() {
@@ -190,13 +201,6 @@ public class SkyCellService extends Service {
 
             if (mBluetoothAdapter.isEnabled()) {
                 mBleService.advertise(true); //Start permanent advertising
-                if (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED) {
-                    Log.d(TAG, "permission granted");
-                    mBleService.scan(true, Constants.SKYCELL_SERVICE);
-                } else {
-                    Log.d(TAG, "no permission");
-                }
             }
         }
 
@@ -233,8 +237,10 @@ public class SkyCellService extends Service {
                 //Create new SensorList
                 app.mSensorList = new SensorList();
                 //Create or load SharedPreferences
-                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
                 String apikey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
+                //Create UUID if missing on init
+                String uuid = app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID);
                 long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
                 Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
                     " (Upload URL: " + url + ", Rate: " + rate + "secs)");
@@ -255,6 +261,7 @@ public class SkyCellService extends Service {
             }
 
             mCloudUploader.start();
+            mKeepAlive.start();
         }
 
         public boolean initializeLocation() {
@@ -316,6 +323,7 @@ public class SkyCellService extends Service {
         mBleService = null;
         mExecutor.shutdown();
         mCloudUploader.stop();
+        mKeepAlive.stop();
 
         super.onDestroy();
     }

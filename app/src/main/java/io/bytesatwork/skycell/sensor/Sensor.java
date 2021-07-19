@@ -1,10 +1,21 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.sensor;
 
 import android.os.Environment;
+import android.os.SystemClock;
 import android.util.Log;
 
 import io.bytesatwork.skycell.BuildConfig;
 import io.bytesatwork.skycell.Constants;
+import io.bytesatwork.skycell.CustomTime;
+import io.bytesatwork.skycell.Settings;
 import io.bytesatwork.skycell.SkyCellApplication;
 import io.bytesatwork.skycell.SynchronizedByteBuffer;
 import io.bytesatwork.skycell.Utils;
@@ -22,6 +33,7 @@ import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class Sensor {
     private static final String TAG = Sensor.class.getSimpleName();
@@ -235,7 +247,7 @@ public class Sensor {
     }
 
     public String getUTCReadoutString() {
-        return Utils.convertTimeStampToUTCString(System.currentTimeMillis());
+        return Utils.convertTimeStampToUTCString(CustomTime.getInstance().currentTimeMillis());
     }
 
     public String convertToJSONString() {
@@ -247,9 +259,11 @@ public class Sensor {
             readout.put("softwareVersion", mState.getSoftwareVersion());
             readout.put("hardwareVersion", mState.getHardwareVersion());
             readout.put("loggerTransmissionRateMultiple", 1); //TODO: missing
-            readout.put("gatewayNumber", "1234"); // TODO get unique ID
+            readout.put("gatewayNumber",
+                app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID));
             readout.put("containerSerialNumber", mState.getContainerId());
-            readout.put("upTimeSeconds", 0); // TODO what is this?
+            readout.put("upTimeSeconds",
+                TimeUnit.MILLISECONDS.toSeconds(SystemClock.elapsedRealtime()));
             readout.put("batteryVoltage", mState.getBattery());
             readout.put("sensorQuantity", mState.getNumSensors());
             readout.put("sensingFrequencySeconds", mState.getInterval());
@@ -343,7 +357,7 @@ public class Sensor {
     }
 
     public boolean writeToFile() {
-        String fileName = getAddress() + "_" + System.currentTimeMillis() + Constants.FILE_ENDING;
+        String fileName = getAddress() + "_" + CustomTime.getInstance().currentTimeMillis() + Constants.FILE_ENDING;
         String json = convertToJSONString();
         boolean ok = false;
 
