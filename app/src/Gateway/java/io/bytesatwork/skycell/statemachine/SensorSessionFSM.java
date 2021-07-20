@@ -1,5 +1,16 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.statemachine;
 
+import java.util.concurrent.TimeUnit;
+
+import io.bytesatwork.skycell.CustomTime;
 import io.bytesatwork.skycell.sensor.Sensor;
 
 public class SensorSessionFSM {
@@ -28,6 +39,8 @@ public class SensorSessionFSM {
     public void signalDataComplete() { mSensorSessionFSMContext.completedData(); }
     public void signalExtrema() { mSensorSessionFSMContext.receiveExtremaPackage(); }
     public void signalExtremaComplete() { mSensorSessionFSMContext.completedExtrema(); }
+    public void signalEvent() { mSensorSessionFSMContext.receiveEventPackage(); }
+    public void signalEventComplete() { mSensorSessionFSMContext.completedEvent(); }
 
     /* Entry actions */
     public void checkConnection() {
@@ -48,8 +61,12 @@ public class SensorSessionFSM {
         mSensor.mBleService.sendReadExtrema(mSensor.getAddress());
     }
 
+    public void sendEventRequest() {
+        mSensor.mBleService.sendReadEvent(mSensor.getAddress());
+    }
+
     public void sendDataRequest() {
-        mSensor.mBleService.sendReadData(mSensor.getAddress(), (System.currentTimeMillis() / 1000));
+        mSensor.mBleService.sendReadData(mSensor.getAddress(), TimeUnit.MILLISECONDS.toSeconds(CustomTime.getInstance().currentTimeMillis()));
     }
 
     public void resetTimeout() {

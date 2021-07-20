@@ -36,7 +36,7 @@
         android:text="@string/label_progressbar_text"
         android:textColor="@color/colorText" />
 
-    <android.support.v7.widget.AppCompatButton xmlns:app="http://schemas.android.com/apk/res-auto"
+    <androidx.appcompat.widget.AppCompatButton xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/progressBarButtonAbort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

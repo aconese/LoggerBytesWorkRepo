@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.sensor;
 
 import io.bytesatwork.skycell.ByteBufferParser;
@@ -7,6 +15,8 @@ import android.util.Log;
 
 import java.io.Serializable;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SensorState implements Serializable {
     private static final String TAG = SensorState.class.getSimpleName();
@@ -28,6 +38,7 @@ public class SensorState implements Serializable {
     private byte mBattery;
     private byte mNumSensors;
     private byte mRssi;
+    public final List<SensorInfo> mSensorInfos = new ArrayList<>();
 
     public SensorState() {
         this.mContainerId = new byte[SENSOR_STATE_CONTAINERID_LENGTH];
@@ -51,6 +62,10 @@ public class SensorState implements Serializable {
             SENSOR_STATE_RSSI_LENGTH;
     }
 
+    public int getSensorInfosLength() {
+        return mNumSensors * SensorInfo.getSensorInfoLength();
+    }
+
     public boolean parseState(byte[] stateBuffer) {
         Log.d(TAG+":"+ Utils.getLineNumber(), "stateBuffer: " +
             Utils.convertBytesToHexString(stateBuffer) + " len: " + stateBuffer.length);
@@ -63,6 +78,18 @@ public class SensorState implements Serializable {
         mBattery = parser.getNextByte();
         mNumSensors = parser.getNextByte();
         mRssi = parser.getNextByte();
+
+        return true;
+    }
+
+    public boolean parseSensorInfos(byte[] infoBuffer, ByteOrder order) {
+        Log.d(TAG+":"+ Utils.getLineNumber(), "infobuffer: " +
+                Utils.convertBytesToHexString(infoBuffer) + " len: " + infoBuffer.length);
+        ByteBufferParser parser = new ByteBufferParser(infoBuffer);
+
+        for (int i = 0; i < mNumSensors; i++) {
+            mSensorInfos.add(new SensorInfo(parser.getNextBytes(SensorInfo.getSensorInfoLength()), order));
+        }
         return true;
     }
 
@@ -75,13 +102,13 @@ public class SensorState implements Serializable {
     }
 
     public String getSoftwareVersion() {
-        return new String("v" + Utils.convertByteToUnsigned(mSoftwareVersion[0]) + "." +
+        return ("v" + Utils.convertByteToUnsigned(mSoftwareVersion[0]) + "." +
             Utils.convertByteToUnsigned(mSoftwareVersion[1]) + "." +
             Utils.convertByteToUnsigned(mSoftwareVersion[2]));
     }
 
     public String getHardwareVersion() {
-        return new String("v" + Utils.convertByteToUnsigned(mHardwareVersion[0]) + "." +
+        return ("v" + Utils.convertByteToUnsigned(mHardwareVersion[0]) + "." +
             Utils.convertByteToUnsigned(mHardwareVersion[1]) + "." +
             Utils.convertByteToUnsigned(mHardwareVersion[2]));
     }
@@ -92,11 +119,12 @@ public class SensorState implements Serializable {
     }
 
     public int getBattery() {
-        return Utils.convertByteToUnsigned(mBattery);
+        final int DECI_VOLT_TO_MILLI = 100;
+        return Utils.convertByteToUnsigned(mBattery) * DECI_VOLT_TO_MILLI;
     }
 
     public String getBatteryString() {
-        return getBattery() + "%";
+        return getBattery() + "mV";
     }
 
     public int getNumSensors() {

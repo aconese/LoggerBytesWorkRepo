@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.connectivity;
 
 import io.bytesatwork.skycell.Constants;
@@ -49,11 +57,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class BleService extends Service {
     private static final String TAG = BleService.class.getSimpleName();
 
-    private SkyCellApplication app;
+    private final SkyCellApplication app;
     private ExecutorService mScheduler;
     private BlockingQueue<Bundle> mSendQueue;
     private Future<?> mSendTask;
     private boolean mRequestPending;
+    private boolean mInitialized = false;
 
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
@@ -79,6 +88,10 @@ public class BleService extends Service {
         "io.bytesatwork.skycell.ACTION_SKYCELL_EXTREMA";
     public static final String ACTION_SKYCELL_EXTREMA_ALL =
         "io.bytesatwork.skycell.ACTION_SKYCELL_EXTREMA_ALL";
+    public static final String ACTION_SKYCELL_EVENT =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_EVENT";
+    public static final String ACTION_SKYCELL_EVENT_ALL =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_EVENT_ALL";
 
     //Intent Extra
     public static final String DEVICE_ADDRESS_SKYCELL =
@@ -198,6 +211,13 @@ public class BleService extends Service {
                     }
 
                     handleExtrema(sensor, offset, value);
+                } else if (Constants.SKYCELL_CHAR_EVENT_UUID.equals(characteristic.getUuid())) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Got Event");
+                    if (responseNeeded) {
+                        mGattServer.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, Constants.EMPTY_BYTES);
+                    }
+
+                    handleEvent(sensor, offset, value);
                 } else {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "Unknown Char");
                     if (responseNeeded) {
@@ -347,10 +367,9 @@ public class BleService extends Service {
     private synchronized void handleState(Sensor sensor, final int offset, final byte[] value) {
         if (sensor != null && !sensor.isStateCompleted()) {
             try {
-                int len = value.length <= sensor.mStateBuffer.remaining() ?
-                    value.length : sensor.mStateBuffer.remaining();
-                Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " + offset + " len: " + len);
-                sensor.mStateBuffer.put(Arrays.copyOfRange(value, 0, len));
+                int length = Math.min(value.length, sensor.mStateBuffer.remaining());
+                Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " + offset + " length: " + length);
+                sensor.mStateBuffer.put(Arrays.copyOfRange(value, 0, length));
                 if (sensor.mStateBuffer.remaining() == 0) {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "State package complete");
 
@@ -365,7 +384,10 @@ public class BleService extends Service {
                             sensor.mState.getRssi()
                         );
                         sensor.completeState();
-                        broadcastUpdate(ACTION_SKYCELL_STATE, sensor.getAddress());
+                        if (value.length > length) {
+                            // handle the rest of the data
+                            handleState(sensor, 0, Arrays.copyOfRange(value, length, value.length));
+                        }
                     } else {
                         Log.e(TAG + ":" + Utils.getLineNumber(), "Could not parse State");
                     }
@@ -373,6 +395,28 @@ public class BleService extends Service {
                 } else {
                     Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
                         sensor.mStateBuffer.remaining() + " bytes remaining");
+                }
+            } catch (BufferOverflowException e) {
+                Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received for State");
+            }
+        } else if (sensor != null && !sensor.areInfosCompleted()) {
+            try {
+                int len = Math.min(value.length, sensor.mSensorInfoBuffer.remaining());
+                Log.d(TAG + ":" + Utils.getLineNumber(), "SensorInfo: " + offset + " len: " + len);
+                sensor.mSensorInfoBuffer.put(Arrays.copyOfRange(value, 0, len));
+                if (sensor.mSensorInfoBuffer.remaining() == 0) {
+                    if (sensor.parseInfos()) {
+                        Log.d(TAG + ":" + Utils.getLineNumber(), "SensorInfos: complete");
+
+                        sensor.completeInfos();
+                        broadcastUpdate(ACTION_SKYCELL_STATE, sensor.getAddress());
+                    } else {
+                        Log.e(TAG + ":" + Utils.getLineNumber(), "Could not parse Infos");
+                    }
+                    sensor.mSensorInfoBuffer.clear();
+                } else {
+                    Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
+                            sensor.mSensorInfoBuffer.remaining() + " bytes remaining");
                 }
             } catch (BufferOverflowException e) {
                 Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received for State");
@@ -390,12 +434,11 @@ public class BleService extends Service {
                 try {
                     int parsed = 0;
                     while (parsed < value.length) {
-                        int parse_len = value.length <= sensor.mDataBuffer.remaining() ?
-                            value.length : sensor.mDataBuffer.remaining();
+                        int parseLength = Math.min(value.length, sensor.mDataBuffer.remaining());
                         Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
-                            offset + " parsed: " + parsed + " parse_len: " + parse_len);
+                            offset + " parsed: " + parsed + " parseLength: " + parseLength);
                         sensor.mDataBuffer.put(Arrays.copyOfRange(value, parsed,
-                            parsed + parse_len));
+                            parsed + parseLength));
                         if (sensor.mDataBuffer.remaining() == 0) {
                             Log.d(TAG + ":" + Utils.getLineNumber(), "Data package complete");
 
@@ -410,7 +453,7 @@ public class BleService extends Service {
                                 sensor.mDataBuffer.remaining() + " bytes remaining");
                         }
 
-                        parsed = parsed + parse_len;
+                        parsed = parsed + parseLength;
                     }
                 } catch (BufferOverflowException e) {
                     Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received " +
@@ -430,8 +473,7 @@ public class BleService extends Service {
                 try {
                     int parsed = 0;
                     while (parsed < value.length) {
-                        int parse_len = value.length <= sensor.mExtremaBuffer.remaining() ?
-                            value.length : sensor.mExtremaBuffer.remaining();
+                        int parse_len = Math.min(value.length, sensor.mExtremaBuffer.remaining());
                         Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
                             offset + " parsed: " + parsed + " parse_len: " + parse_len);
                         sensor.mExtremaBuffer.put(Arrays.copyOfRange(value, parsed,
@@ -455,6 +497,45 @@ public class BleService extends Service {
                 } catch (BufferOverflowException e) {
                     Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received " +
                         "in the Extrema package");
+                }
+            }
+        }
+    }
+
+    private synchronized void handleEvent(Sensor sensor, final int offset, final byte[] value) {
+        if (sensor != null && !sensor.isEventCompleted() && sensor.mEventBuffer != null) {
+            if (value.length == 0) {
+                Log.d(TAG + ":" + Utils.getLineNumber(), "All Event packages received");
+                sensor.completeEvent();
+                broadcastUpdate(ACTION_SKYCELL_EVENT_ALL, sensor.getAddress());
+            } else {
+                try {
+                    int parsed = 0;
+                    while (parsed < value.length) {
+                        int parse_len = Math.min(value.length, sensor.mEventBuffer.remaining());
+                        Log.d(TAG + ":" + Utils.getLineNumber(), "offset: " +
+                            offset + " parsed: " + parsed + " parse_len: " + parse_len);
+                        sensor.mEventBuffer.put(Arrays.copyOfRange(value, parsed,
+                            parsed + parse_len));
+                        if (sensor.mEventBuffer.remaining() == 0) {
+                            Log.d(TAG + ":" + Utils.getLineNumber(), "Event package complete");
+
+                            if (sensor.parseEvent()) {
+                                Log.d(TAG + ":" + Utils.getLineNumber(),
+                                    "Wait for more Event packages");
+                                broadcastUpdate(ACTION_SKYCELL_EVENT, sensor.getAddress());
+                            }
+                            sensor.mEventBuffer.clear();
+                        } else {
+                            Log.d(TAG + ":" + Utils.getLineNumber(), "Waiting for " +
+                                sensor.mEventBuffer.remaining() + " bytes remaining");
+                        }
+
+                        parsed = parsed + parse_len;
+                    }
+                } catch (BufferOverflowException e) {
+                    Log.e(TAG + ":" + Utils.getLineNumber(), "Too much data received " +
+                        "in the Event package");
                 }
             }
         }
@@ -484,7 +565,7 @@ public class BleService extends Service {
         Log.i(TAG + ":" + Utils.getLineNumber(), "onBind");
 
         //Init Queue
-        mSendQueue = new LinkedBlockingQueue<Bundle>();
+        mSendQueue = new LinkedBlockingQueue<>();
 
         //Start Executor
         mScheduler = Executors.newCachedThreadPool();
@@ -505,7 +586,7 @@ public class BleService extends Service {
      *
      * @return Return true if the initialization is successful.
      */
-    public boolean initialize() {
+    public synchronized boolean initialize() {
         // For API level 18 and above, get a reference to BluetoothAdapter through
         // BluetoothManager.
         if (mBluetoothManager == null) {
@@ -535,16 +616,32 @@ public class BleService extends Service {
 
         if (!mGattServer.addService(setupSkyCellService())) {
             Log.e(TAG + ":" + Utils.getLineNumber(), "Adding Service failed");
-            return false;
-        }
-
-        if (!BluetoothAdapter.getDefaultAdapter().setName(Constants.SKYCELL_DEVICE_NAME)) {
-            Log.e(TAG + ":" + Utils.getLineNumber(), "Set DeviceName failed");
+            mGattServer.close(); //Close gattServer if service adding fails
             return false;
         }
 
         Log.i(TAG + ":" + Utils.getLineNumber(), "BLE Initialization is successful.");
+        mInitialized = true;
         return true;
+    }
+
+    public synchronized boolean deinitialize() {
+        if (mGattServer == null) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "mGattServer is null");
+            mInitialized = false;
+            return false;
+        }
+
+        Log.i(TAG + ":" + Utils.getLineNumber(), "mGattServer clearServices and close");
+        mGattServer.clearServices();
+        mGattServer.close();
+
+        mInitialized = false;
+        return true;
+    }
+
+    public synchronized boolean isInitialized() {
+        return mInitialized;
     }
 
     /**
@@ -560,7 +657,7 @@ public class BleService extends Service {
     }
 
     private synchronized BluetoothGattService setupSkyCellService() {
-        final BluetoothGattService service = new BluetoothGattService(Constants.SKYCELL_SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
+        final BluetoothGattService SERVICE = new BluetoothGattService(Constants.SKYCELL_SERVICE_UUID, BluetoothGattService.SERVICE_TYPE_PRIMARY);
 
         // Battery Level
         mGattCharCmd = new BluetoothGattCharacteristic(
@@ -568,34 +665,39 @@ public class BleService extends Service {
             BluetoothGattCharacteristic.PROPERTY_INDICATE | BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattDescriptor desc_ccc = new BluetoothGattDescriptor(
+        final BluetoothGattDescriptor DESC_CCC = new BluetoothGattDescriptor(
             Constants.SKYCELL_DESC_CCC_UUID,
             BluetoothGattDescriptor.PERMISSION_READ | BluetoothGattDescriptor.PERMISSION_WRITE);
-        desc_ccc.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
-        mGattCharCmd.addDescriptor(desc_ccc);
+        DESC_CCC.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        mGattCharCmd.addDescriptor(DESC_CCC);
 
-        final BluetoothGattCharacteristic char_state = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_STATE = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_STATE_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattCharacteristic char_data = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_DATA = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_DATA_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        final BluetoothGattCharacteristic char_extrema = new BluetoothGattCharacteristic(
+        final BluetoothGattCharacteristic CHAR_EXTREMA = new BluetoothGattCharacteristic(
             Constants.SKYCELL_CHAR_EXTREMA_UUID,
             BluetoothGattCharacteristic.PROPERTY_WRITE,
             BluetoothGattCharacteristic.PERMISSION_WRITE);
 
+        final BluetoothGattCharacteristic CHAR_EVENT = new BluetoothGattCharacteristic(
+            Constants.SKYCELL_CHAR_EVENT_UUID,
+            BluetoothGattCharacteristic.PROPERTY_WRITE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE);
 
-        service.addCharacteristic(mGattCharCmd);
-        service.addCharacteristic(char_state);
-        service.addCharacteristic(char_data);
-        service.addCharacteristic(char_extrema);
+        SERVICE.addCharacteristic(mGattCharCmd);
+        SERVICE.addCharacteristic(CHAR_STATE);
+        SERVICE.addCharacteristic(CHAR_DATA);
+        SERVICE.addCharacteristic(CHAR_EXTREMA);
+        SERVICE.addCharacteristic(CHAR_EVENT);
 
-        return service;
+        return SERVICE;
     }
 
     public synchronized void scan(final boolean enable, String uuid) {
@@ -624,7 +726,7 @@ public class BleService extends Service {
 
     private List<ScanFilter> scanFilters(String uuid) {
         ScanFilter filter = new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID.fromString(uuid))).build();
-        List<ScanFilter> list = new ArrayList<ScanFilter>(1);
+        List<ScanFilter> list = new ArrayList<>(1);
         list.add(filter);
         return list;
     }
@@ -686,31 +788,33 @@ public class BleService extends Service {
                 serviceData.order(ByteOrder.LITTLE_ENDIAN);
                 serviceData.put(isGateway);
                 serviceData.put(cid);
-
-                settings = new AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                    .setConnectable(true)
-                    .build();
             } else {
                 serviceData = ByteBuffer.allocate(1);
                 serviceData.order(ByteOrder.LITTLE_ENDIAN);
                 serviceData.put(isGateway);
-
-                settings = new AdvertiseSettings.Builder()
-                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_BALANCED)
-                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
-                    .setConnectable(true)
-                    .build();
             }
 
+            settings = new AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                .setConnectable(true)
+                .build();
+
+            int deviceNameLength = BluetoothAdapter.getDefaultAdapter().getName().length();
             AdvertiseData data = new AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
+                .setIncludeDeviceName(deviceNameLength > 14 ? false : true)
                 .setIncludeTxPowerLevel(true)
                 .addServiceUuid(Constants.SKYCELL_SERVICE_PARCELUUID)
                 .addServiceData(Constants.SKYCELL_SERVICE_PARCELUUID, serviceData.array())
                 .build();
-            advertiser.startAdvertising(settings, data, mAdvertisingCallback);
+            if (deviceNameLength > 14) { //Add deviceName to scan response if it's longer than 14
+                AdvertiseData scanResponse = new AdvertiseData.Builder()
+                    .setIncludeDeviceName(deviceNameLength > 31 ? false : true)
+                    .build();
+                advertiser.startAdvertising(settings, data, scanResponse, mAdvertisingCallback);
+            } else {
+                advertiser.startAdvertising(settings, data, mAdvertisingCallback);
+            }
         } else {
             advertiser.stopAdvertising(mAdvertisingCallback);
         }
@@ -741,7 +845,8 @@ public class BleService extends Service {
         mSendQueue.clear();
     }
 
-    public synchronized boolean sendConfig(String addr, long timeStamp, short interval) {
+    public synchronized boolean sendConfig(String addr, long timeStamp, short interval,
+                                           short transmissionRateMultiple) {
         Sensor sensor = app.mSensorList.getSensorByAddress(addr);
         if (sensor != null) {
             ByteBuffer cmd = ByteBuffer.allocate(11);
@@ -749,6 +854,7 @@ public class BleService extends Service {
             cmd.put(Constants.CMD_CONFIG);
             cmd.putLong(timeStamp);
             cmd.putShort(interval);
+            cmd.putShort(transmissionRateMultiple);
 
             return sendCMD(addr, cmd.array());
         }
@@ -830,6 +936,19 @@ public class BleService extends Service {
         return false;
     }
 
+    public synchronized boolean sendReadEvent(String addr) {
+        Sensor sensor = app.mSensorList.getSensorByAddress(addr);
+        if (sensor != null) {
+            ByteBuffer cmd = ByteBuffer.allocate(1);
+            cmd.order(ByteOrder.LITTLE_ENDIAN);
+            cmd.put(Constants.CMD_READ_EVENT);
+
+            sensor.clearEvent();
+            return sendCMD(addr, cmd.array());
+        }
+        return false;
+    }
+
     public synchronized boolean sendClear(String addr) {
         Sensor sensor = app.mSensorList.getSensorByAddress(addr);
         if (sensor != null) {
@@ -839,6 +958,7 @@ public class BleService extends Service {
             cmd.putShort(sensor.getReadPosition());
 
             sensor.clearState();
+            sensor.clearInfos();
             return sendCMD(addr, cmd.array());
         }
         return false;
@@ -936,7 +1056,7 @@ public class BleService extends Service {
     }
 
     private class SendTask implements Runnable {
-        private BlockingQueue<Bundle> queue;
+        private final BlockingQueue<Bundle> queue;
 
         public SendTask(BlockingQueue<Bundle> queue) {
             this.queue = queue;
@@ -956,12 +1076,9 @@ public class BleService extends Service {
         }
 
         private void consume(Bundle b) throws InterruptedException {
-            //long startTime = System.currentTimeMillis();
-
             while ((app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) != null) && mRequestPending) {
                 Thread.sleep(10);
             }
-            if (app.mSensorList.getSensorByAddress(b.getString(DEVICE_ADDRESS_SKYCELL)) == null) return;
         }
     }
 }

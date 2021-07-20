@@ -1,7 +1,15 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.sensor;
 
-import android.support.annotation.IntDef;
-import android.support.annotation.StringDef;
+import androidx.annotation.IntDef;
+import androidx.annotation.StringDef;
 import android.util.Log;
 
 import java.lang.annotation.Retention;
@@ -23,41 +31,45 @@ public class SensorExtrema {
     }
     @StringDef({ExtremaTypeString.MIN, ExtremaTypeString.MAX})
     public @interface ExtremaTypeString {
-        String MIN = "Min";
-        String MAX = "Max";
+        String MIN = "min";
+        String MAX = "max";
     }
 
+    public static final int SENSOR_EXTREMA_PERIOD_START_LENGTH = 8;
+    public static final int SENSOR_EXTREMA_PERIOD_END_LENGTH = 8;
     public static final int SENSOR_EXTREMA_TIMESTAMP_LENGTH = 8;
-    public static final int SENSOR_EXTREMA_STARTTIMESTAMP_LENGTH = 8;
-    public static final int SENSOR_EXTREMA_SENSORID_LENGTH = 1;
+    public static final int SENSOR_EXTREMA_SENSORID_LENGTH = 8;
     public static final int SENSOR_EXTREMA_TYPE_LENGTH = 1;
     public static final int SENSOR_EXTREMA_VALUE_LENGTH = 2;
 
     public static final int SENSOR_EXTREMA_BINARYDATA_LENGTH = (
+        SENSOR_EXTREMA_PERIOD_START_LENGTH +
+        SENSOR_EXTREMA_PERIOD_END_LENGTH +
         SENSOR_EXTREMA_TIMESTAMP_LENGTH +
-        SENSOR_EXTREMA_STARTTIMESTAMP_LENGTH +
         SENSOR_EXTREMA_SENSORID_LENGTH +
         SENSOR_EXTREMA_TYPE_LENGTH +
         SENSOR_EXTREMA_VALUE_LENGTH
     );
     public static final int SENSOR_EXTREMA_SIGNATURE_LENGTH = 64;
 
-    private byte[] mBinaryData;
-    private byte[] mSignature;
+    private final byte[] mBinaryData;
+    private final byte[] mSignature;
 
-    private byte[] mTimeStamp;
-    private byte[] mStartTimeStamp;
-    private byte mSensorId;
-    private byte mType;
-    private byte[] mValue;
+    private final byte[] mPeriodStart;
+    private final byte[] mPeriodEnd;
+    private final byte[] mTimeStamp;
+    private final long mUID;
+    private final byte mType;
+    private final byte[] mValue;
 
     private SensorExtrema() {
         this.mBinaryData = new byte[SENSOR_EXTREMA_BINARYDATA_LENGTH];
         this.mSignature = new byte[SENSOR_EXTREMA_SIGNATURE_LENGTH];
 
+        this.mPeriodStart = new byte[SENSOR_EXTREMA_PERIOD_START_LENGTH];
+        this.mPeriodEnd = new byte[SENSOR_EXTREMA_PERIOD_END_LENGTH];
         this.mTimeStamp = new byte[SENSOR_EXTREMA_TIMESTAMP_LENGTH];
-        this.mStartTimeStamp = new byte[SENSOR_EXTREMA_STARTTIMESTAMP_LENGTH];
-        this.mSensorId = 0;
+        this.mUID = 0;
         this.mType = 0;
         this.mValue = new byte[SENSOR_EXTREMA_VALUE_LENGTH];
     }
@@ -69,9 +81,11 @@ public class SensorExtrema {
         this.mSignature = parser.getNextBytes(SENSOR_EXTREMA_SIGNATURE_LENGTH);
 
         parser = new ByteBufferParser(mBinaryData);
+        this.mPeriodStart = parser.getNextBytes(SENSOR_EXTREMA_PERIOD_START_LENGTH);
+        this.mPeriodEnd = parser.getNextBytes(SENSOR_EXTREMA_PERIOD_END_LENGTH);
         this.mTimeStamp = parser.getNextBytes(SENSOR_EXTREMA_TIMESTAMP_LENGTH);
-        this.mStartTimeStamp = parser.getNextBytes(SENSOR_EXTREMA_STARTTIMESTAMP_LENGTH);
-        this.mSensorId = parser.getNextByte();
+        this.mUID = Utils.convertBytesToLong(parser.getNextBytes(SENSOR_EXTREMA_SENSORID_LENGTH),
+            0, SENSOR_EXTREMA_SENSORID_LENGTH, ByteOrder.LITTLE_ENDIAN);
         this.mType = parser.getNextByte();
         this.mValue = parser.getNextBytes(SENSOR_EXTREMA_VALUE_LENGTH);
     }
@@ -97,24 +111,28 @@ public class SensorExtrema {
         }
     }
 
+    public String getUTCPeriodStartTimeStamp() {
+        long startTimeStamp = Utils.convertBytesToTimeStamp(mPeriodStart, 0,
+            mPeriodStart.length, ByteOrder.LITTLE_ENDIAN);
+        return Utils.convertTimeStampToUTCString(startTimeStamp);
+    }
+
+    public String getUTCPeriodEndTimeStamp() {
+        long endTimeStamp = Utils.convertBytesToTimeStamp(mPeriodEnd, 0,
+            mPeriodEnd.length, ByteOrder.LITTLE_ENDIAN);
+        return Utils.convertTimeStampToUTCString(endTimeStamp);
+    }
+
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
-    public String getUTCPeriodStartTimeStamp() {
-        long startTimeStamp = Utils.convertBytesToTimeStamp(mStartTimeStamp, 0,
-            mStartTimeStamp.length, ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(startTimeStamp * 1000);
-    }
+    public String getUUID() { return Long.toHexString(mUID); }
 
-    public int getSensorId() {
-        return Utils.convertByteToUnsigned(mSensorId);
-    }
-
-    public String getValue() {
+    public float getValue() {
         int v = Utils.convertBytesToShort(mValue, 0, mValue.length, ByteOrder.LITTLE_ENDIAN);
-        return Float.toString((float) v / 10);
+        return (float) v / 10;
     }
 }

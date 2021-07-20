@@ -102,13 +102,13 @@
 
     </TableLayout>
 
-    <android.support.v4.view.ViewPager
+    <androidx.viewpager.widget.ViewPager
         android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="30"/>
 
-    <android.support.v7.widget.AppCompatButton
+    <androidx.appcompat.widget.AppCompatButton
         xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/uploadButton"
         android:layout_width="match_parent"

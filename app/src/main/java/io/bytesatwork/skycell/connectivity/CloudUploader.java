@@ -1,20 +1,25 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.connectivity;
 
 import android.os.Environment;
 import android.util.Log;
-import javax.net.ssl.HttpsURLConnection;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import io.bytesatwork.skycell.Constants;
 import io.bytesatwork.skycell.Settings;
@@ -26,27 +31,52 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class CloudUploader {
     private static final String TAG = CloudUploader.class.getSimpleName();
 
-    private SkyCellApplication app;
-    private ScheduledExecutorService mExecutor;
+    private final SkyCellApplication app;
+    private final ScheduledExecutorService mExecutor;
+    private final CloudConnection mConnection;
+    private ScheduledFuture<?> mFuture;
 
     public CloudUploader() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
-        //TODO: Use JobScheduler instead of ScheduledExecutorService
+        //TODO: Use WorkManager instead of ScheduledExecutorService
         this.mExecutor = Executors.newScheduledThreadPool(1);
+        this.mConnection = new CloudConnection();
+        this.mFuture = null;
     }
 
-    public void start() {
+    public boolean start() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Start");
-        String path = app.getApplicationContext().getExternalFilesDir(null).getAbsolutePath();
-        String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_SERVER_URL);
+        String path = Objects.requireNonNull(app.getApplicationContext().getExternalFilesDir(null)).getAbsolutePath();
+        String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
         String apiKey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
         long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
-        mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate, SECONDS);
+        try {
+            mFuture = mExecutor.scheduleAtFixedRate(new FileUploadTask(path, url, apiKey), rate, rate,
+                SECONDS);
+        } catch (RejectedExecutionException rejectedExecutionException) {
+            rejectedExecutionException.printStackTrace();
+            return false;
+        }
+        return true;
     }
 
-    public void stop() {
+    public boolean stop() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "Stop");
+        if (mFuture != null) {
+            return mFuture.cancel(true);
+        }
+
+        return true;
+    }
+
+    public void shutdown() {
+        stop();
+        Log.i(TAG + ":" + Utils.getLineNumber(), "Shutdown");
         mExecutor.shutdown();
+    }
+
+    public boolean isRunning() {
+        return ((mFuture != null) && !mFuture.isDone());
     }
 
     private class FileUploadTask implements Runnable {
@@ -64,88 +94,37 @@ public class CloudUploader {
             Log.i(TAG + ":" + Utils.getLineNumber(), "run");
             if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
                 if (mDirectory.isDirectory()) {
-                    File[] files = mDirectory.listFiles(new FilenameFilter() {
-                        @Override
-                        public boolean accept(File dir, String name) {
-                            return name.toLowerCase().endsWith(Constants.FILE_ENDING);
-                        }
-                    });
-                    for (int i = 0; i < files.length; ++i) {
-                        Log.i(TAG + ":" + Utils.getLineNumber(), "Read: (" +
-                            (i + 1) + " / " + files.length + ") " + files[i].getName());
-                        try {
-                            BufferedReader buffreader = new BufferedReader(new InputStreamReader(
-                                new FileInputStream(files[i])));
-                            StringBuffer json = new StringBuffer("");
-                            String line = "";
-                            while ((line = buffreader.readLine()) != null) {
-                                json.append(line);
-                            }
-                            buffreader.close();
-                            if (json.length() > 0) {
-                                if (upload(json.toString(), files[i].getName())) {
-                                    Log.i(TAG + ":" + Utils.getLineNumber(),
-                                        "Upload ok - delete file");
-                                    files[i].delete();
-                                } else {
-                                    Log.w(TAG + ":" + Utils.getLineNumber(), "Upload failed");
+                    File[] files = mDirectory.listFiles((dir, name) -> name.toLowerCase().endsWith(Constants.FILE_ENDING));
+                    if (files != null) {
+                        for (int i = 0; i < files.length; ++i) {
+                            Log.i(TAG + ":" + Utils.getLineNumber(), "Read: (" +
+                                (i + 1) + " / " + files.length + ") " + files[i].getName());
+                            try {
+                                BufferedReader buffreader = new BufferedReader(new InputStreamReader(
+                                    new FileInputStream(files[i])));
+                                StringBuilder json = new StringBuilder();
+                                String line;
+                                while ((line = buffreader.readLine()) != null) {
+                                    json.append(line);
                                 }
+                                buffreader.close();
+                                if (json.length() > 0) {
+                                    if (mConnection.post(json.toString(), mUrl, mApikey) != null) {
+                                        boolean ok = files[i].delete();
+                                        Log.i(TAG + ":" + Utils.getLineNumber(),
+                                            "Upload ok - delete file: " + ok);
+                                    } else {
+                                        Log.w(TAG + ":" + Utils.getLineNumber(), "Upload failed");
+                                        break;
+                                    }
+                                }
+                            } catch (Exception e) {
+                                e.printStackTrace();
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
                         }
                     }
                 }
             }
-        }
-
-        private boolean upload(String json, String fileName) {
-            boolean ok = false;
-            HttpURLConnection connection = null;
-
-            try {
-                //header
-                Log.i(TAG + ":" + Utils.getLineNumber(), "Send JSON to: " + mUrl);
-                URL url = new URL(mUrl);
-                connection = (HttpsURLConnection) url.openConnection();
-                connection.setDoOutput(true);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("Accept", "application/json");
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("APIKEY", mApikey);
-
-                //send json
-                DataOutputStream out = new DataOutputStream(connection.getOutputStream());
-                out.writeBytes(json);
-                out.flush();
-                out.close();
-
-                //get status
-                int responseCode = connection.getResponseCode();
-                Log.i(TAG + ":" + Utils.getLineNumber(), "Status: " + responseCode);
-                ok = (HttpURLConnection.HTTP_OK <= responseCode &&
-                    responseCode <= HttpURLConnection.HTTP_RESET);
-
-                //read response
-                BufferedReader responseStreamReader = new BufferedReader(new InputStreamReader(
-                    new BufferedInputStream(connection.getInputStream())));
-                String line = "";
-                while ((line = responseStreamReader.readLine()) != null) {
-                    Log.i(TAG + ":" + Utils.getLineNumber(), line);
-                }
-                responseStreamReader.close();
-
-                //disconnect
-                connection.disconnect();
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
-                }
-            }
-
-            return ok;
         }
     }
 }

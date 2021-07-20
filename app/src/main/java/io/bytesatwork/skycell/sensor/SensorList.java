@@ -1,6 +1,14 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.sensor;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -12,10 +20,10 @@ import io.bytesatwork.skycell.Utils;
 public class SensorList {
     private static final String TAG = SensorList.class.getSimpleName();
 
-    private List<Sensor> mSensorList;
+    private final List<Sensor> mSensorList;
 
     public SensorList() {
-        this.mSensorList = Collections.synchronizedList(new ArrayList<Sensor>());
+        this.mSensorList = Collections.synchronizedList(new ArrayList<>());
     }
 
     public SensorList(ArrayList<Sensor> sensorList) {
@@ -78,7 +86,7 @@ public class SensorList {
     public Sensor getSensorByDeviceId(final String did) {
         synchronized (mSensorList) {
             for (Sensor s :  mSensorList) {
-                if (s.getDeviceId() == did) {
+                if (s.getDeviceId().equals(did)) {
                     return s;
                 }
             }

@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell.sensor;
 
 import io.bytesatwork.skycell.ByteBufferParser;
@@ -15,8 +23,8 @@ public class SensorMeasurement {
     public static final int SENSOR_MEASUREMENT_TIMESTAMP_LENGTH = 4;
     public static final int SENSOR_MEASUREMENT_VALUE_LENGTH = 2;
 
-    private byte[] mTimeStamp;
-    public byte[] mValues;
+    private final byte[] mTimeStamp;
+    public final byte[] mValues;
 
     private SensorMeasurement() {
         this.mTimeStamp = new byte[SENSOR_MEASUREMENT_TIMESTAMP_LENGTH];
@@ -38,19 +46,19 @@ public class SensorMeasurement {
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
-    public String[] getValues() {
-        String[] values = new String[mValues.length / SENSOR_MEASUREMENT_VALUE_LENGTH];
+    public float[] getValues() {
+        float[] values = new float[mValues.length / SENSOR_MEASUREMENT_VALUE_LENGTH];
         ByteBufferParser parser = new ByteBufferParser(mValues);
         for (int i = 0; i < values.length; ++i) {
             int v = Utils.convertBytesToShort(parser.getNextBytes(SENSOR_MEASUREMENT_VALUE_LENGTH),
                 0, SENSOR_MEASUREMENT_VALUE_LENGTH, ByteOrder.LITTLE_ENDIAN);
             if (v == SENSOR_MEASUREMENT_VALUE_ERROR) {
-                values[i] = SENSOR_MEASUREMENT_VALUE_ERROR_STRING; //return error
+                values[i] = Float.NEGATIVE_INFINITY; //return error
             } else {
-                values[i] = Float.toString((float) v / 10);
+                values[i] = (float) v / 10;
             }
         }
         return values;

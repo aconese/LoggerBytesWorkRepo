@@ -1,3 +1,11 @@
+/* Copyright (c) 2021 bytes at work AG. All rights reserved.
+ *
+ * This software is the confidential and proprietary information of
+ * bytes at work AG. ("Confidential Information"). You shall not disclose
+ * such confidential information and shall use it only in accordance with
+ * the terms of the license agreement you entered into with bytes at work AG.
+ */
+
 package io.bytesatwork.skycell;
 
 import java.io.ByteArrayInputStream;
@@ -11,15 +19,17 @@ import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Objects;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public final class Utils {
     private static final String TAG = Utils.class.getSimpleName();
     static final private char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-    static final private int EPOCH_OFFSET = 946684800;
 
     //restrict instantiation
     private Utils() {
@@ -30,7 +40,7 @@ public final class Utils {
     }
 
     public static boolean isGateway() {
-        return (BuildConfig.FLAVOR == Constants.FLAVOUR_GATEWAY);
+        return (BuildConfig.FLAVOR.equals(Constants.FLAVOUR_GATEWAY));
     }
 
     public static byte[] convertObjectToBytes(Object object) throws IOException {
@@ -92,8 +102,8 @@ public final class Utils {
 
     public static long convertBytesToTimeStamp(byte[] value, int offset, int len, ByteOrder order) {
         if (len == 2 || len == 4) {
-            long timeStamp = (long) convertBytesToInt(value, offset, len, order);
-            return timeStamp + EPOCH_OFFSET;
+            long timeStamp = convertBytesToInt(value, offset, len, order);
+            return TimeUnit.SECONDS.toMillis(timeStamp) + Constants.EPOCH_OFFSET_MS;
         } else if (len == 8) {
             return convertBytesToLong(value, offset, len, order);
         }
@@ -109,6 +119,19 @@ public final class Utils {
         return dateFormat.format(cal.getTime());
     }
 
+    public static long convertUTCStringToTimeStamp(String timeStamp) {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(Constants.DATEFORMAT_UTC);
+        dateFormat.setTimeZone(TimeZone.getTimeZone(Constants.TIMEZONE_UTC));
+        long ts = 0;
+        try {
+            ts = Objects.requireNonNull(dateFormat.parse(timeStamp)).getTime();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return ts;
+    }
+
     public static String convertBytesToHexString(byte[] value) {
         char[] hexChars = new char[value.length * 2];
         for (int i = 0; i < value.length; ++i) {
@@ -120,25 +143,25 @@ public final class Utils {
     }
 
     public static String convertBytesToHexString(byte[] value, int offset, int len, ByteOrder
-        order, Class dataType) {
+        order, Class<?> dataType) {
         ByteBuffer buffer = ByteBuffer.wrap(value, offset, len).order(order);
-        String retString = new String();
+        StringBuilder hexStringBuilder = new StringBuilder();
 
         if (dataType == Long.class) {
             while (buffer.remaining() > 0) {
-                retString += String.format("%016X", (0xFFFFFFFFFFFFFFFFL & buffer.getLong()));
+                hexStringBuilder.append(String.format("%016X", (0xFFFFFFFFFFFFFFFFL & buffer.getLong())));
             }
-            return retString;
+            return hexStringBuilder.toString();
         } else if (dataType == Integer.class) {
             while (buffer.remaining() > 0) {
-                retString += String.format("%08X", (0xFFFFFFFF & buffer.getInt()));
+                hexStringBuilder.append(String.format("%08X", (0xFFFFFFFF & buffer.getInt())));
             }
-            return retString;
+            return hexStringBuilder.toString();
         } else if (dataType == Short.class) {
             while (buffer.remaining() > 0) {
-                retString += String.format("%04X", (0xFFFF & buffer.getShort()));
+                hexStringBuilder.append(String.format("%04X", (0xFFFF & buffer.getShort())));
             }
-            return retString;
+            return hexStringBuilder.toString();
         } else { //if (dataType == Byte.class)
             return convertBytesToHexString(value);
         }
