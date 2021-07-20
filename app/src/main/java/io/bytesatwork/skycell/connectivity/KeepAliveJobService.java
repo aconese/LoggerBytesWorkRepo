@@ -14,6 +14,7 @@ import android.app.job.JobScheduler;
 import android.app.job.JobService;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.util.Log;
 
 import org.json.JSONException;
@@ -34,39 +35,64 @@ public class KeepAliveJobService extends JobService {
     private static final long KEEPALIVE_INTERVAL = 30 * 60 * 1000L; // 30min
     private static final int MAX_RETRIES = 3;
 
-    private SkyCellApplication app;
-    private KeepAliveTask mKeepAliveTask;
-    private Thread mThread;
-    private CloudConnection mConnection;
-    private GPS mGPS;
+    private final SkyCellApplication app;
+    private final Thread mThread;
+    private final CloudConnection mConnection;
+    private final GPS mGPS;
+    private JobScheduler mJobScheduler;
+    private final Intent mCloudTimeIntent;
+
+    //Intent Action
+    public static final String ACTION_SKYCELL_CLOUD_TIME =
+        "io.bytesatwork.skycell.ACTION_SKYCELL_CLOUD_TIME";
 
     public KeepAliveJobService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
-        this.mKeepAliveTask = new KeepAliveTask();
-        this.mThread = new Thread(mKeepAliveTask);
+        this.mThread = new Thread(new KeepAliveTask());
         this.mConnection = new CloudConnection();
         this.mGPS = new GPS();
         mGPS.registerListener();
+        this.mJobScheduler = (JobScheduler)
+            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        this.mCloudTimeIntent = new Intent(ACTION_SKYCELL_CLOUD_TIME);
     }
 
-    public void start() {
+    public boolean start() {
         Log.i(TAG + ":" + Utils.getLineNumber(), "start()");
 
-        JobScheduler jobScheduler = (JobScheduler)
-            app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         ComponentName componentName =
             new ComponentName(app, KeepAliveJobService.class);
         JobInfo.Builder builder = new JobInfo.Builder(JOB_ID, componentName);
         builder.setPersisted(false); //Don't persist across device reboots
         builder.setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY);
         builder.setPeriodic(KEEPALIVE_INTERVAL);
-        jobScheduler.schedule(builder.build());
+
+        if (mJobScheduler != null) {
+            return (mJobScheduler.schedule(builder.build()) == JobScheduler.RESULT_SUCCESS);
+        }
+        return false;
     }
 
-    public void stop() {
+    public boolean stop() {
+        if (mJobScheduler != null) {
+            mJobScheduler.cancel(JOB_ID);
+            return true;
+        }
+        return false;
+    }
+
+    public void shutdown() {
+        if (mJobScheduler != null) {
+            mJobScheduler.cancel(JOB_ID);
+            mJobScheduler = null;
+        }
+    }
+
+    public boolean isRunning() {
         JobScheduler jobScheduler = (JobScheduler)
             app.getSystemService(Context.JOB_SCHEDULER_SERVICE);
-        jobScheduler.cancel(JOB_ID);
+
+        return jobScheduler.getAllPendingJobs().stream().anyMatch(job -> job.getId() == JOB_ID);
     }
 
     @Override
@@ -87,16 +113,17 @@ public class KeepAliveJobService extends JobService {
     }
 
     private class KeepAliveTask implements Runnable {
-
         public void run() {
             for (int i = 0; i < MAX_RETRIES; ++i) {
-                if (getTimeOfCloud()) break;
+                if (getTimeOfCloud()) {
+                    sendBroadcast(mCloudTimeIntent);
+                    break;
+                }
             }
             for (int i = 0; i < MAX_RETRIES; ++i) {
                 if (sendKeepAlive()) break;
             }
         }
-
 
         private boolean sendKeepAlive() {
             boolean ok = false;
@@ -142,8 +169,7 @@ public class KeepAliveJobService extends JobService {
                         Log.i(TAG + ":" + Utils.getLineNumber(),
                             "timeStamp: " + utcTime + " -> " + timeStamp);
                         //Set Time
-                        CustomTime.getInstance().setCurrentTimeMillis(timeStamp);
-                        ok = true;
+                        ok = CustomTime.getInstance().setCloudTimeStamp(timeStamp);
                     } else {
                         ok = false;
                     }

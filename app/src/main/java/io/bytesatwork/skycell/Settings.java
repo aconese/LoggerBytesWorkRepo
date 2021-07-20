@@ -27,8 +27,8 @@ public class Settings {
     public static final String SHARED_PREFERENCES_UUID =
         "io.bytesatwork.skycell.SHARED_PREFERENCES_UUID";
     private static final String SHARED_PREFERENCES = "io.bytesatwork.skycell.SHARED_PREFERENCES";
-    private SharedPreferences mPreferences;
-    private SkyCellApplication app;
+    private final SharedPreferences mPreferences;
+    private final SkyCellApplication app;
 
     public Settings() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());

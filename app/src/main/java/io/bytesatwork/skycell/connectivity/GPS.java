@@ -26,8 +26,8 @@ public class GPS {
 
     private static final long MIN_LOCATION_UPDATE_TIME = 1000L;
 
-    private SkyCellApplication app;
-    private LocationManager mLocationManager;
+    private final SkyCellApplication app;
+    private final LocationManager mLocationManager;
     private String mProvider;
     private Location mLocation;
 

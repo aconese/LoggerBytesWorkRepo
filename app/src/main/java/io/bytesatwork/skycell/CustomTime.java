@@ -8,25 +8,49 @@
 
 package io.bytesatwork.skycell;
 
+import android.os.SystemClock;
+import android.util.Log;
+
 public class CustomTime {
     private static final String TAG = CustomTime.class.getSimpleName();
 
     private static final CustomTime mTime = new CustomTime();
-    private long mTimeDiffMillis;
+    private long mCloudTimeStamp;
+    private long mElapsedRealtimeStart;
 
     public static CustomTime getInstance() {
         return mTime;
     }
 
     private CustomTime() {
-        this.mTimeDiffMillis = 0;
+        this.mCloudTimeStamp = 0L;
+        this.mElapsedRealtimeStart = 0L;
     }
 
     public long currentTimeMillis() {
-        return System.currentTimeMillis() + mTimeDiffMillis;
+        long elapsed = SystemClock.elapsedRealtime() - mElapsedRealtimeStart;
+        long timeStamp = mCloudTimeStamp + elapsed;
+        Log.i(TAG + ":" + Utils.getLineNumber(),
+            "Elapsed " + elapsed + " since cloud ts: " + mCloudTimeStamp + ", current ts: " + timeStamp +
+                ", system ts: " + System.currentTimeMillis());
+        return timeStamp;
     }
 
-    public void setCurrentTimeMillis(long timeStamp) {
-        mTimeDiffMillis = timeStamp - System.currentTimeMillis();
+    public boolean setCloudTimeStamp(long timeStamp) {
+        if (!isTimeStampValid(timeStamp)) {
+            return false;
+        }
+
+        mCloudTimeStamp = timeStamp;
+        mElapsedRealtimeStart = SystemClock.elapsedRealtime();
+        return true;
+    }
+
+    public boolean hasValidTime() {
+        return isTimeStampValid(mCloudTimeStamp);
+    }
+
+    private boolean isTimeStampValid(long timeStamp) {
+        return timeStamp > Constants.EPOCH_OFFSET_MS;
     }
 }

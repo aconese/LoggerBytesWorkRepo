@@ -202,7 +202,7 @@ public class SensorDetailFragment extends Fragment {
         if (sensor != null) {
             //TODO: check if read is already pending!
             mActivity.mBleService.sendReadData(sensor.getAddress(),
-                (CustomTime.getInstance().currentTimeMillis() / 1000));
+                TimeUnit.MILLISECONDS.toSeconds(CustomTime.getInstance().currentTimeMillis()));
             showProgress();
         } /*else {
             //TODO: gray out

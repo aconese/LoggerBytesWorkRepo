@@ -21,37 +21,55 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.LinkProperties;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
+
+import android.os.SystemClock;
 import android.util.Log;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import io.bytesatwork.skycell.connectivity.BleService;
+import io.bytesatwork.skycell.connectivity.CloudConnection;
 import io.bytesatwork.skycell.connectivity.CloudUploader;
 import io.bytesatwork.skycell.connectivity.KeepAliveJobService;
 import io.bytesatwork.skycell.sensor.Sensor;
 import io.bytesatwork.skycell.sensor.SensorList;
+import io.bytesatwork.skycell.statemachine.ConnectivityFSM;
 
 public class SkyCellService extends Service {
     private static final String TAG = SkyCellService.class.getSimpleName();
     public static final String CHANNEL_ID = "io.bytesatwork.skycell.CHANNEL_ID";
     public static final String CHANNEL_NAME = "Channel";
 
-    private SkyCellApplication app;
+    private final SkyCellApplication app;
     private static SkyCellService instance = null;
     private final IBinder mBinder;
 
     private BluetoothAdapter mBluetoothAdapter;
     private static BleService mBleService = null;
     private boolean mBleServiceBound = false;
-    private ExecutorService mExecutor;
+    private final ExecutorService mExecutor;
     private long startTime = 0;
-    private CloudUploader mCloudUploader;
-    private KeepAliveJobService mKeepAlive;
+    private final CloudUploader mCloudUploader;
+    private final KeepAliveJobService mKeepAlive;
+    private final CloudConnection mConnection;
+    private String mUploadURL;
+    private final ConnectivityManager mConnectivityManager;
+    private final GatewayTask mGatewayTask;
+    private final CountDownLatch mCountDownLatch;
+    private final ConnectivityFSM mConnectivityFSM;
 
     public SkyCellService() {
         this.app = ((SkyCellApplication) SkyCellApplication.getAppContext());
@@ -59,6 +77,30 @@ public class SkyCellService extends Service {
         this.mExecutor = Executors.newSingleThreadExecutor();
         this.mCloudUploader = new CloudUploader();
         this.mKeepAlive = new KeepAliveJobService();
+        this.mConnection = new CloudConnection();
+        this.mUploadURL = "";
+        this.mConnectivityManager = (ConnectivityManager)app.getSystemService(Context.CONNECTIVITY_SERVICE);
+        this.mGatewayTask = new GatewayTask();
+        this.mCountDownLatch = new CountDownLatch(1);
+        this.mConnectivityFSM = new ConnectivityFSM(this);
+    }
+
+    public boolean startAdvertising() {
+        if (mBleService != null && mBleService.isInitialized()) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "startAdvertising()");
+            return mBleService.advertise(true); //Start permanent advertising
+        }
+
+        return false;
+    }
+
+    public boolean stopAdvertising() {
+        if (mBleService != null && mBleService.isInitialized()) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "stopAdvertising()");
+            return mBleService.advertise(false); //Stop advertising
+        }
+
+        return false;
     }
 
     public static boolean isRunning() {
@@ -89,17 +131,40 @@ public class SkyCellService extends Service {
 
                     case BluetoothAdapter.STATE_ON:
                         //Indicates the local Bluetooth adapter is on, and ready for use.
-                        Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_ON");
+                        Log.i(TAG + ":" + Utils.getLineNumber(), "BluetoothAdapter.STATE_ON");
+                        //Check for advertisement support
+                        if (!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
+                            Log.e(TAG + ":" + Utils.getLineNumber(),
+                                getString(R.string.ble_adv_not_supported));
+                            stopSelf(); //Stop in case of advertisement is not supported
+                        }
+                        if (!mGatewayTask.initializeBluetoothService()) {
+                            stopSelf();
+                        }
+
+                        mConnectivityFSM.signalBleOn();
                         break;
 
                     case BluetoothAdapter.STATE_TURNING_OFF:
                         //Indicates the local Bluetooth adapter is turning off. Local clients should immediately attempt graceful disconnection of any remote links.
                         Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_TURNING_OFF");
+
+                        if (mBleService != null) {
+                            mBleService.deinitialize();
+                        }
+
+                        mConnectivityFSM.signalBleOff();
                         break;
 
                     case BluetoothAdapter.STATE_OFF:
                         //Indicates the local Bluetooth adapter is off.
                         Log.i(TAG+":"+Utils.getLineNumber(), "BluetoothAdapter.STATE_OFF");
+
+                        if (mBleService != null && mBleService.isInitialized()) {
+                            mBleService.deinitialize();
+                        }
+
+                        mConnectivityFSM.signalBleOff();
                         break;
 
                     default:
@@ -139,7 +204,7 @@ public class SkyCellService extends Service {
                 } else if (BleService.ACTION_SKYCELL_DATA_ALL.equals(action)) {
                     Log.i(TAG+":"+Utils.getLineNumber(), "ACTION_SKYCELL_DATA_ALL");
                     Log.i(TAG+":"+Utils.getLineNumber(), "time readData: " +
-                        (System.currentTimeMillis() - startTime) / 1000 + "sec");
+                        TimeUnit.MILLISECONDS.toSeconds(SystemClock.elapsedRealtime() - startTime) + "sec");
                     if (sensor != null) {
                         sensor.mSensorSessionFSM.signalDataComplete();
                     }
@@ -162,7 +227,7 @@ public class SkyCellService extends Service {
                     Log.i(TAG + ":" + Utils.getLineNumber(), "ACTION_SKYCELL_EVENT_ALL");
                     if (sensor != null) {
                         sensor.mSensorSessionFSM.signalEventComplete();
-                        startTime = System.currentTimeMillis();
+                        startTime = SystemClock.elapsedRealtime();
                     }
                 }
             }
@@ -187,28 +252,60 @@ public class SkyCellService extends Service {
         return intentFilter;
     }
 
+    private final BroadcastReceiver mCloudReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final String action = intent.getAction();
+
+            if (KeepAliveJobService.ACTION_SKYCELL_CLOUD_TIME.equals(action)) {
+                if (CustomTime.getInstance().hasValidTime()) {
+                    Log.d(TAG + ":" + Utils.getLineNumber(), "Got a valid time");
+                    mConnectivityFSM.signalValidTime();
+                }
+            } else if (CloudConnection.ACTION_SKYCELL_CLOUD_ONLINE.equals(action)) {
+                boolean online = intent.getBooleanExtra(CloudConnection.EXTRA_SKYCELL_CLOUD_ONLINE,
+                    false);
+                if (online) {
+                    if (!mCloudUploader.isRunning()) {
+                        mCloudUploader.start();
+                    }
+                    if (!mKeepAlive.isRunning()) {
+                        mKeepAlive.start();
+                    }
+                    mConnectivityFSM.signalCloudOn();
+                } else {
+                    if (mCloudUploader.isRunning()) {
+                        mCloudUploader.stop();
+                    }
+                    if (mKeepAlive.isRunning()) {
+                        mKeepAlive.stop();
+                    }
+                    mConnectivityFSM.signalCloudOff();
+                }
+            }
+        }
+    };
+
     //Code to manage Service lifecycle.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName componentName, IBinder service) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceConnected");
             mBleService = ((BleService.LocalBinder) service).getService();
-            if (!mBleService.initialize()) {
-                Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
-                stopSelf();
-            }
             mBleServiceBound = true;
-
-            if (mBluetoothAdapter.isEnabled()) {
-                mBleService.advertise(true); //Start permanent advertising
-            }
+            mCountDownLatch.countDown();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName componentName) {
             Log.i(TAG + ":" + Utils.getLineNumber(), "onServiceDisconnected");
-            mBleService.advertise(false); //Stop permanent advertising
-            mBleService = null;
+            if (mBleService != null) {
+                mBleService.advertise(false); //Stop permanent advertising
+                if (mBleService.isInitialized()) {
+                    mBleService.deinitialize();
+                }
+                mBleService = null;
+            }
             mBleServiceBound = false;
         }
 
@@ -221,6 +318,56 @@ public class SkyCellService extends Service {
         public void onNullBinding(ComponentName name) {
             Log.e(TAG+":"+Utils.getLineNumber(),"onNullBinding");
             stopSelf();
+        }
+    };
+
+    //NetworkCallback starts/stops cloud services on network changes
+    private final ConnectivityManager.NetworkCallback mNetworkCallback = new ConnectivityManager.NetworkCallback() {
+        @Override
+        public void onAvailable(@NonNull Network network) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "The default network is now: " + network);
+            NetworkCapabilities networkCapabilities =
+                mConnectivityManager.getNetworkCapabilities(network);
+            checkCapabilities(networkCapabilities);
+        }
+
+        @Override
+        public void onLost(@NonNull Network network) {
+            Log.i(TAG + ":" + Utils.getLineNumber(), "The application no longer has a default" +
+                " network. The last default network was " + network);
+            if (mCloudUploader.isRunning()) {
+                mCloudUploader.stop();
+            }
+            if (mKeepAlive.isRunning()) {
+                mKeepAlive.stop();
+            }
+
+            mConnectivityFSM.signalWifiOff();
+            mConnection.stop();
+        }
+
+        @Override
+        public void onCapabilitiesChanged(@NonNull Network network, @NonNull NetworkCapabilities networkCapabilities) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed " +
+                "capabilities: " + networkCapabilities);
+            checkCapabilities(networkCapabilities);
+        }
+
+        @Override
+        public void onLinkPropertiesChanged(@NonNull Network network, @NonNull LinkProperties linkProperties) {
+            Log.d(TAG + ":" + Utils.getLineNumber(), "The default network changed link " +
+                "properties: " + linkProperties);
+        }
+
+        private void checkCapabilities(NetworkCapabilities networkCapabilities) {
+            if (networkCapabilities != null && networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                !networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_BLUETOOTH)) {
+                mConnectivityFSM.signalWifiOn();
+                mConnection.start(mUploadURL);
+            } else {
+                mConnectivityFSM.signalWifiOff();
+                mConnection.stop();
+            }
         }
     };
 
@@ -237,31 +384,29 @@ public class SkyCellService extends Service {
                 //Create new SensorList
                 app.mSensorList = new SensorList();
                 //Create or load SharedPreferences
-                String url = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
+                mUploadURL = app.mSettings.loadString(Settings.SHARED_PREFERENCES_URL_UPLOAD);
                 String apikey = app.mSettings.loadString(Settings.SHARED_PREFERENCES_APIKEY);
                 //Create UUID if missing on init
                 String uuid = app.mSettings.loadString(Settings.SHARED_PREFERENCES_UUID);
                 long rate = app.mSettings.loadLong(Settings.SHARED_PREFERENCES_UPLOAD_RATE_SECS);
                 Log.i(TAG+":"+Utils.getLineNumber(), "Initializing SkyCellService" +
-                    " (Upload URL: " + url + ", Rate: " + rate + "secs)");
+                    " (Upload URL: " + mUploadURL + ", Rate: " + rate + "secs)");
             }
 
-            if (!initializeLocation()) {
+            if (!checkStoragePermission() || !initializeLocation() || !initializeBluetooth()
+                || !initializeNetworkCallback() || !initializeCloudReceiver()) {
                 stopSelf();
-                return;
-            } else if (!initializeBluetooth()) {
-                stopSelf();
-                return;
+            }
+        }
+
+        public boolean checkStoragePermission() {
+            if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+                PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG + ":" + Utils.getLineNumber(), getString(R.string.storage_permission_denied));
+                return false;
             }
 
-            if (mBleService == null) {
-                registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
-                bindService(new Intent(instance, BleService.class), mServiceConnection,
-                    BIND_AUTO_CREATE);
-            }
-
-            mCloudUploader.start();
-            mKeepAlive.start();
+            return true;
         }
 
         public boolean initializeLocation() {
@@ -282,24 +427,77 @@ public class SkyCellService extends Service {
             if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
                 Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.ble_not_supported));
                 return false;
-            } else if (!BluetoothAdapter.getDefaultAdapter().isMultipleAdvertisementSupported()) {
-                //Check for advertisement support
-                Log.e(TAG+":"+Utils.getLineNumber(), getString(R.string.ble_adv_not_supported));
-                return false;
             }
 
             //Initializes a Bluetooth adapter.
             final BluetoothManager bluetoothManager =
                     (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
             mBluetoothAdapter = bluetoothManager.getAdapter();
-
             if (mBluetoothAdapter == null) {
                 return false;
-            } else if (!mBluetoothAdapter.isEnabled()) {
+            }
+
+            if (mBleService == null) {
+                registerReceiver(mGattUpdateReceiver, setupBroadcastReceiverFilter());
+                bindService(new Intent(instance, BleService.class), mServiceConnection,
+                    BIND_AUTO_CREATE);
+            }
+
+            try {
+                mCountDownLatch.await();
+            } catch (InterruptedException interruptedException) {
+                interruptedException.printStackTrace();
+                return false;
+            }
+
+            //Enable Bluetooth if off
+            if (!mBluetoothAdapter.isEnabled()) {
                 return mBluetoothAdapter.enable();
+            } else {
+                if (!initializeBluetoothService()) {
+                    return false;
+                } else {
+                    mConnectivityFSM.signalBleOn();
+                }
             }
 
             return true;
+        }
+
+        public boolean initializeCloudReceiver() {
+            final IntentFilter intentFilter = new IntentFilter();
+            intentFilter.addAction(KeepAliveJobService.ACTION_SKYCELL_CLOUD_TIME);
+            intentFilter.addAction(CloudConnection.ACTION_SKYCELL_CLOUD_ONLINE);
+            intentFilter.setPriority(Constants.SKYCELL_INTENT_FILTER_HIGH_PRIORITY);
+            registerReceiver(mCloudReceiver, intentFilter);
+            return true;
+        }
+
+        public boolean initializeBluetoothService() {
+            if (mBleService != null) {
+                if (mBleService.isInitialized()) {
+                    Log.i(TAG + ":" + Utils.getLineNumber(), "Bluetooth already initialized");
+                    return true;
+                }
+                if (!mBleService.initialize()) {
+                    Log.e(TAG + ":" + Utils.getLineNumber(), "Unable to initialize Bluetooth");
+                    return false;
+                }
+            } else {
+                Log.e(TAG + ":" + Utils.getLineNumber(), "BLE Service is null");
+                return false;
+            }
+
+            return true;
+        }
+
+        public boolean initializeNetworkCallback() {
+            if (mConnectivityManager != null) {
+                mConnectivityManager.registerDefaultNetworkCallback(mNetworkCallback);
+                return true;
+            }
+
+            return false;
         }
     }
 
@@ -316,14 +514,19 @@ public class SkyCellService extends Service {
         instance = null;
 
         if (mBleServiceBound && mBleService != null) {
+            if (mBleService.isInitialized()) {
+                mBleService.deinitialize();
+            }
             unregisterReceiver(mGattUpdateReceiver);
             unbindService(mServiceConnection);
             mBleServiceBound = false;
         }
+        unregisterReceiver(mCloudReceiver);
         mBleService = null;
         mExecutor.shutdown();
-        mCloudUploader.stop();
-        mKeepAlive.stop();
+        mConnection.shutdown();
+        mCloudUploader.shutdown();
+        mKeepAlive.shutdown();
 
         super.onDestroy();
     }
@@ -365,7 +568,7 @@ public class SkyCellService extends Service {
 
         startForeground(startId, notificationBuilder.build());
 
-        mExecutor.execute(new GatewayTask());
+        mExecutor.execute(mGatewayTask);
 
         //We want this service to continue running until it is explicitly stopped
         return START_STICKY;

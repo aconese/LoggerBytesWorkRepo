@@ -16,7 +16,6 @@ import android.util.Log;
 import java.io.Serializable;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SensorState implements Serializable {
@@ -39,7 +38,7 @@ public class SensorState implements Serializable {
     private byte mBattery;
     private byte mNumSensors;
     private byte mRssi;
-    public List<SensorInfo> mSensorInfos = new ArrayList<SensorInfo>();
+    public final List<SensorInfo> mSensorInfos = new ArrayList<>();
 
     public SensorState() {
         this.mContainerId = new byte[SENSOR_STATE_CONTAINERID_LENGTH];
@@ -103,13 +102,13 @@ public class SensorState implements Serializable {
     }
 
     public String getSoftwareVersion() {
-        return new String("v" + Utils.convertByteToUnsigned(mSoftwareVersion[0]) + "." +
+        return ("v" + Utils.convertByteToUnsigned(mSoftwareVersion[0]) + "." +
             Utils.convertByteToUnsigned(mSoftwareVersion[1]) + "." +
             Utils.convertByteToUnsigned(mSoftwareVersion[2]));
     }
 
     public String getHardwareVersion() {
-        return new String("v" + Utils.convertByteToUnsigned(mHardwareVersion[0]) + "." +
+        return ("v" + Utils.convertByteToUnsigned(mHardwareVersion[0]) + "." +
             Utils.convertByteToUnsigned(mHardwareVersion[1]) + "." +
             Utils.convertByteToUnsigned(mHardwareVersion[2]));
     }

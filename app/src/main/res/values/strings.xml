@@ -13,6 +13,7 @@
     <string name="nfc_not_supported">NFC is not supported</string>
     <string name="location_not_supported">Location is not supported</string>
     <string name="location_permission_denied">Access coarse location is denied</string>
+    <string name="storage_permission_denied">Access to external storage is denied</string>
     <string name="start_upload">Start uploading…</string>
     <string name="upload_success">Upload success</string>
     <string name="upload_failed">Upload failed</string>

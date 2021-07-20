@@ -60,12 +60,12 @@ public class SensorEvent {
         SENSOR_EVENT_VALUE_LENGTH
     );
 
-    private byte[] mBinaryData;
+    private final byte[] mBinaryData;
 
-    private byte mType;
-    private byte[] mTimeStamp;
-    private byte mSpecific;
-    private byte[] mValue;
+    private final byte mType;
+    private final byte[] mTimeStamp;
+    private final byte mSpecific;
+    private final byte[] mValue;
 
     private SensorEvent() {
         this.mBinaryData = new byte[SENSOR_EVENT_BINARYDATA_LENGTH];
@@ -103,7 +103,7 @@ public class SensorEvent {
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
     public byte getSpecific() {

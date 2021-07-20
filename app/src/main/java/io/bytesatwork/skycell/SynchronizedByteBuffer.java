@@ -11,7 +11,7 @@ package io.bytesatwork.skycell;
 import java.nio.ByteBuffer;
 
 public class SynchronizedByteBuffer {
-    private ByteBuffer mBuffer;
+    private final ByteBuffer mBuffer;
 
     public SynchronizedByteBuffer(int length) {
         this.mBuffer = ByteBuffer.allocate(length);

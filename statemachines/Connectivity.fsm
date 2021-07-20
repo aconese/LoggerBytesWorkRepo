@@ -1,0 +1,112 @@
+<?xml version='1.0'?>
+<!DOCTYPE qfsmproject SYSTEM 'qfsm.dtd'>
+<qfsmproject version="0.54" author="Qfsm">
+  <machine nummooreout="0" transfontitalic="0" draw_it="1" statefontsize="8" transfont="Helvetica" statefontitalic="0" author="" description="" version="" name="ConnectivityFSM" arrowtype="1" numbits="3" statefontweight="50" statefont="Helvetica" numin="0" transfontsize="8" transfontweight="50" type="2" numout="0" initialstate="0">
+    <outputnames_moore></outputnames_moore>
+    <inputnames></inputnames>
+    <outputnames></outputnames>
+    <itransition ypos="87" endx="137" xpos="77" endy="87"/>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="off()" moore_outputs="" ypos="87" code="0" xpos="177" linewidth="1">OFF</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="on()" moore_outputs="" ypos="497" code="3" xpos="485" linewidth="1">ON</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="wifiOffBleOn()" moore_outputs="" ypos="177" code="1" xpos="495" linewidth="1">WIFI_OFF_BLE_ON</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="wifiOnBleOff()" moore_outputs="" ypos="344" code="2" xpos="145" linewidth="1">WIFI_ON_BLE_OFF</state>
+    <state pencolor="0" exit_actions="stopAdvertising()" radius="40" description="" finalstate="0" entry_actions="startAdvertising()" moore_outputs="" ypos="965" code="4" xpos="831" linewidth="1">ON_VALID_TIME</state>
+    <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="checkTime()" moore_outputs="" ypos="654" code="5" xpos="630" linewidth="1">ON_CLOUD</state>
+    <transition c1x="303.6945858711471" c2y="118.8399608326116" c1y="97.70179991345033" description="" straight="1" type="2" ypos="76.56363899428904" endx="479.8546861711798" xpos="215.6145357211307" endy="139.9781217517729" c2x="391.7746360211634">
+      <from>0</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">bleOn</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="137.5324566053265" c2y="250.9060352873129" c1y="183.3327851646387" description="" straight="1" type="2" ypos="115.7595350419645" endx="114.1991375637775" xpos="149.199116126101" endy="318.4792854099871" c2x="125.865797084552">
+      <from>0</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">wifiOn</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="354.4368522582344" c2y="413.514412821074" c1y="454.744554394686" description="" straight="1" type="2" ypos="495.974695968298" endx="173.2842712474619" xpos="445.0131427636207" endy="372.2842712474619" c2x="263.8605617528482">
+      <from>3</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">bleOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="513.5958238095502" c2y="302.7763630700829" c1y="389.329499112529" description="" straight="1" type="2" ypos="475.8826351549751" endx="502.8446454055273" xpos="518.9714130115617" endy="216.2232270276368" c2x="508.2202346075388">
+      <from>3</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">wifiOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="557.0109828494866" c2y="579.2316106050017" c1y="544.1123372373088" description="" straight="1" type="2" ypos="508.9930638696158" endx="624.7134511963593" xpos="523.1597486760502" endy="614.3508839726946" c2x="590.8622170229229">
+      <from>3</from>
+      <to>5</to>
+      <inputs default="0" any="0" invert="0">cloudOn</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="375.9827532730272" c2y="122.1910220397188" c1y="143.9285881995114" description="" straight="1" type="2" ypos="165.6661543593039" endx="214.6696764637935" xpos="456.639291677644" endy="100.4534558799263" c2x="295.3262148684104">
+      <from>1</from>
+      <to>0</to>
+      <inputs default="0" any="0" invert="0">bleOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="467.5542404490542" c2y="377.5483261903682" c1y="292.4908421343658" description="" straight="1" type="2" ypos="207.4333580783634" endx="464.5784498337825" xpos="469.04213575669" endy="462.6058102463707" c2x="466.0663451414183">
+      <from>1</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">wifiOn</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="180.0779058887034" c2y="188.7838386686769" c1y="253.0126247018895" description="" straight="1" type="2" ypos="317.241410735102" endx="190.7701859663369" xpos="174.7317658498866" endy="124.5550526354643" c2x="185.4240459275201">
+      <from>2</from>
+      <to>0</to>
+      <inputs default="0" any="0" invert="0">wifiOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="274.8439651856007" c2y="426.9874590093054" c1y="383.4000338142919" description="" straight="1" type="2" ypos="339.8126086192783" endx="454.9714593230898" xpos="184.7802181168562" endy="470.574884204319" c2x="364.9077122543453">
+      <from>2</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">bleOn</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="572.5881721591877" c2y="575.9261802774478" c1y="768.9856564284177" description="" straight="1" type="2" ypos="962.0451325793875" endx="135.5459368341" xpos="791.1092898217316" endy="382.8667041264779" c2x="354.0670544966438">
+      <from>4</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">bleOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="739.9537804596292" c2y="444.8369493105557" c1y="686.6422436828727" description="" straight="1" type="2" ypos="928.4475380551897" endx="525.3702640946119" xpos="847.2455386421379" endy="203.0316549382387" c2x="632.6620222771206">
+      <from>4</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">wifiOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="686.4555400631054" c2y="664.7399378664036" c1y="802.1096116381954" description="" straight="1" type="2" ypos="939.479285409987" endx="458.9683450617613" xpos="800.1991375637775" endy="527.3702640946119" c2x="572.7119425624334">
+      <from>4</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">cloudOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="710.0882672886199" c2y="845.9902819340331" c1y="765.9037753676665" description="" straight="1" type="2" ypos="685.8172688013" endx="821.7813446448315" xpos="654.2417286105142" endy="926.0767885003996" c2x="765.9348059667258">
+      <from>5</from>
+      <to>4</to>
+      <inputs default="0" any="0" invert="0">validTime</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="447.2633858375912" c2y="467.5946143299271" c1y="552.2355802701827" description="" straight="1" type="2" ypos="636.8765462104382" endx="154.0891846242567" xpos="593.8504864442584" endy="382.9536483896717" c2x="300.676285230924">
+      <from>5</from>
+      <to>2</to>
+      <inputs default="0" any="0" invert="0">bleOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="567.3362331189226" c2y="565.121426345746" c1y="594.8682326286413" description="" straight="1" type="2" ypos="624.6150389115365" endx="496.286652959662" xpos="602.8610231985529" endy="535.3746200628508" c2x="531.8114430392923">
+      <from>5</from>
+      <to>3</to>
+      <inputs default="0" any="0" invert="0">cloudOff</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="597.310363551008" c2y="345.0830453565515" c1y="479.8840789395894" description="" straight="1" type="2" ypos="614.6851125226272" endx="517.1880078490092" xpos="637.3715414020074" endy="210.2820117735137" c2x="557.2491857000086">
+      <from>5</from>
+      <to>1</to>
+      <inputs default="0" any="0" invert="0">wifiOff</inputs>
+      <outputs></outputs>
+    </transition>
+  </machine>
+</qfsmproject>

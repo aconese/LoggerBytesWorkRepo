@@ -52,15 +52,15 @@ public class SensorExtrema {
     );
     public static final int SENSOR_EXTREMA_SIGNATURE_LENGTH = 64;
 
-    private byte[] mBinaryData;
-    private byte[] mSignature;
+    private final byte[] mBinaryData;
+    private final byte[] mSignature;
 
-    private byte[] mPeriodStart;
-    private byte[] mPeriodEnd;
-    private byte[] mTimeStamp;
-    private long mUID;
-    private byte mType;
-    private byte[] mValue;
+    private final byte[] mPeriodStart;
+    private final byte[] mPeriodEnd;
+    private final byte[] mTimeStamp;
+    private final long mUID;
+    private final byte mType;
+    private final byte[] mValue;
 
     private SensorExtrema() {
         this.mBinaryData = new byte[SENSOR_EXTREMA_BINARYDATA_LENGTH];
@@ -114,19 +114,19 @@ public class SensorExtrema {
     public String getUTCPeriodStartTimeStamp() {
         long startTimeStamp = Utils.convertBytesToTimeStamp(mPeriodStart, 0,
             mPeriodStart.length, ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(startTimeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(startTimeStamp);
     }
 
     public String getUTCPeriodEndTimeStamp() {
         long endTimeStamp = Utils.convertBytesToTimeStamp(mPeriodEnd, 0,
             mPeriodEnd.length, ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(endTimeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(endTimeStamp);
     }
 
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
     public String getUUID() { return Long.toHexString(mUID); }

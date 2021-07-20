@@ -23,8 +23,8 @@ public class SensorMeasurement {
     public static final int SENSOR_MEASUREMENT_TIMESTAMP_LENGTH = 4;
     public static final int SENSOR_MEASUREMENT_VALUE_LENGTH = 2;
 
-    private byte[] mTimeStamp;
-    public byte[] mValues;
+    private final byte[] mTimeStamp;
+    public final byte[] mValues;
 
     private SensorMeasurement() {
         this.mTimeStamp = new byte[SENSOR_MEASUREMENT_TIMESTAMP_LENGTH];
@@ -46,7 +46,7 @@ public class SensorMeasurement {
     public String getUTCTimeStamp() {
         long timeStamp = Utils.convertBytesToTimeStamp(mTimeStamp, 0, mTimeStamp.length,
             ByteOrder.LITTLE_ENDIAN);
-        return Utils.convertTimeStampToUTCString(timeStamp * 1000);
+        return Utils.convertTimeStampToUTCString(timeStamp);
     }
 
     public float[] getValues() {
