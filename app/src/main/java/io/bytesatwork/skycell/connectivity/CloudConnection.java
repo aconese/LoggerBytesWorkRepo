@@ -104,6 +104,7 @@ public class CloudConnection {
             streamReader.close();
         } catch (Exception e) {
             e.printStackTrace();
+            ok = false;
         } finally {
             //disconnect
             if (connection != null) {
@@ -178,6 +179,7 @@ public class CloudConnection {
             streamReader.close();
         } catch (Exception e) {
             e.printStackTrace();
+            ok = false;
         } finally {
             //disconnect
             if (connection != null) {
