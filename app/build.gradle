@@ -1,14 +1,6 @@
 apply plugin: 'com.android.application'
 
 android {
-    signingConfigs {
-        config {
-            keyAlias 'SkyCellKey'
-            keyPassword 'SK1C4b@w'
-            storeFile file('/home/benjamin/workspace/baw/Android/keystore.jks')
-            storePassword 'B@WK3y$'
-        }
-    }
     compileSdkVersion 29
     defaultConfig {
         applicationId "io.bytesatwork.skycell"
@@ -17,14 +9,12 @@ android {
         versionCode 15
         versionName "1.0.15"
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
-        signingConfig signingConfigs.config
     }
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config
             zipAlignEnabled true
         }
     }
